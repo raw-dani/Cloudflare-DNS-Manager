@@ -149,41 +149,91 @@
 
 /* ===== MAIN TABS ===== */
 .dns-main-nav {
-  display: flex;
-  gap: 8px;
-  border-bottom: 2px solid var(--dns-gray-200);
-  margin-bottom: 22px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 640px) {
+  .dns-main-nav {
+    grid-template-columns: 1fr;
+  }
 }
 
 .dns-main-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--dns-gray-500);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--dns-white);
+  border: 1.5px solid var(--dns-gray-200);
+  border-radius: var(--dns-radius-lg);
   cursor: pointer;
-  transition: all .15s ease;
+  transition: all .2s ease;
   user-select: none;
-}
-
-.dns-main-tab svg {
-  width: 17px;
-  height: 17px;
+  text-align: left;
+  box-shadow: var(--dns-shadow-sm);
+  position: relative;
 }
 
 .dns-main-tab:hover {
-  color: var(--dns-gray-800);
+  border-color: var(--dns-gray-300);
+  background: var(--dns-gray-50);
+  transform: translateY(-1px);
 }
 
 .dns-main-tab.active {
-  color: var(--dns-primary);
-  border-bottom-color: var(--dns-primary);
+  background: #f8fafc;
+  border-color: var(--dns-primary);
+  box-shadow: 0 0 0 2px rgba(37,99,235,.15), var(--dns-shadow-sm);
+}
+
+.dns-tab-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--dns-gray-100);
+  color: var(--dns-gray-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all .2s;
+}
+
+.dns-main-tab.active .dns-tab-icon {
+  background: var(--dns-primary);
+  color: var(--dns-white);
+}
+
+.dns-tab-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.dns-tab-info {
+  flex: 1;
+}
+
+.dns-tab-title {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--dns-gray-800);
+  margin-bottom: 3px;
+}
+
+.dns-main-tab.active .dns-tab-title {
+  color: var(--dns-primary-dark);
+}
+
+.dns-tab-desc {
+  display: block;
+  font-size: 12.5px;
+  color: var(--dns-gray-500);
+  line-height: 1.4;
+  font-weight: normal;
 }
 
 .dns-tab-pane {
@@ -200,8 +250,29 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 18px;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--dns-white);
+  border: 1px solid var(--dns-gray-200);
+  border-radius: var(--dns-radius-lg);
+  box-shadow: var(--dns-shadow-sm);
+  margin-bottom: 20px;
+}
+
+.dns-analytics-bar-header h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--dns-gray-800);
+  margin: 0 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dns-analytics-bar-header p {
+  font-size: 12.5px;
+  color: var(--dns-gray-500);
+  margin: 0;
 }
 
 .dns-stat-grid {
@@ -1161,12 +1232,22 @@
   {* ============ MAIN NAVIGATION TABS ============ *}
   <div class="dns-main-nav">
     <button type="button" class="dns-main-tab active" data-target="tabRecords">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
-      {$LANG.cfdnsmanager.tabRecords}
+      <div class="dns-tab-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+      </div>
+      <div class="dns-tab-info">
+        <span class="dns-tab-title">{$LANG.cfdnsmanager.tabRecords}</span>
+        <span class="dns-tab-desc">{$LANG.cfdnsmanager.tabRecordsDesc}</span>
+      </div>
     </button>
     <button type="button" class="dns-main-tab" data-target="tabAnalytics">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      {$LANG.cfdnsmanager.tabAnalytics}
+      <div class="dns-tab-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      </div>
+      <div class="dns-tab-info">
+        <span class="dns-tab-title">{$LANG.cfdnsmanager.tabAnalytics}</span>
+        <span class="dns-tab-desc">{$LANG.cfdnsmanager.tabAnalyticsDesc}</span>
+      </div>
     </button>
   </div>
 
@@ -1605,14 +1686,25 @@
 
     {* Filter & Notice Bar *}
     <div class="dns-analytics-bar">
-      <div>
-        <span class="dns-chip active dns-analytics-range" data-range="24h">{$LANG.cfdnsmanager.range24h}</span>
-        <span class="dns-chip dns-analytics-range" data-range="7d">{$LANG.cfdnsmanager.range7d}</span>
-        <span class="dns-chip dns-analytics-range" data-range="30d">{$LANG.cfdnsmanager.range30d}</span>
+      <div class="dns-analytics-bar-header">
+        <h4>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px; height:18px; color:var(--dns-primary);"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          {$LANG.cfdnsmanager.analyticsBarTitle}
+        </h4>
+        <p>{$LANG.cfdnsmanager.analyticsBarSubtitle}</p>
       </div>
-      <div style="font-size:12px; color:var(--dns-gray-500); display:flex; align-items:center; gap:6px;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px; color:var(--dns-primary);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        {$LANG.cfdnsmanager.analyticsNotice}
+
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="font-size:12px; font-weight:600; color:var(--dns-gray-500); margin-right:4px;">Rentang:</span>
+          <button type="button" class="dns-chip active dns-analytics-range" data-range="24h">{$LANG.cfdnsmanager.range24h}</button>
+          <button type="button" class="dns-chip dns-analytics-range" data-range="7d">{$LANG.cfdnsmanager.range7d}</button>
+          <button type="button" class="dns-chip dns-analytics-range" data-range="30d">{$LANG.cfdnsmanager.range30d}</button>
+        </div>
+        <div style="font-size:12px; color:var(--dns-gray-400); display:flex; align-items:center; gap:5px;" title="Cloudflare GraphQL Analytics API">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px; height:13px; color:var(--dns-primary);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>Free Tier GraphQL</span>
+        </div>
       </div>
     </div>
 
