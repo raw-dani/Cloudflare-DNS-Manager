@@ -768,10 +768,33 @@ class CloudflareAPI
         $errors = $response['result']['errors'] ?? [];
 
         if (!empty($errors)) {
-            $errMsg = is_array($errors) ? json_encode($errors) : (string) $errors;
+            $rawMsg = '';
+            if (is_array($errors)) {
+                $messages = [];
+                foreach ($errors as $err) {
+                    if (is_array($err) && isset($err['message'])) {
+                        $messages[] = $err['message'];
+                    } elseif (is_string($err)) {
+                        $messages[] = $err;
+                    }
+                }
+                $rawMsg = implode('; ', $messages);
+            } else {
+                $rawMsg = (string) $errors;
+            }
+
+            // Check if error is due to missing Analytics permission on the API Token
+            if (strpos($rawMsg, 'analytics.read') !== false || strpos($rawMsg, 'does not have permission') !== false) {
+                return [
+                    'success' => false,
+                    'is_permission_error' => true,
+                    'message' => 'API Token Cloudflare belum memiliki izin akses analitik. Silakan tambahkan izin "Zone - Analytics - Read" pada API Token Anda di dashboard Cloudflare (My Profile > API Tokens).'
+                ];
+            }
+
             return [
                 'success' => false,
-                'message' => 'GraphQL error: ' . $errMsg
+                'message' => 'GraphQL error: ' . ($rawMsg ?: 'Unknown error')
             ];
         }
 

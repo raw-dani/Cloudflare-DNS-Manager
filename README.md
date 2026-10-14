@@ -80,10 +80,16 @@ Saat membuat/mengedit produk dengan Module `cfdnsmanager`, isi tab **Module Sett
 | Opsi | Keterangan |
 |---|---|
 | **Cloudflare Email** | Email akun Cloudflare (dipakai bila autentikasi Global API Key) |
-| **Cloudflare API Token** | **API Token** dengan izin `Zone:Edit` + `DNS:Edit` *(disarankan)*, **atau** Global API Key |
+| **Cloudflare API Token** | **API Token** dengan izin `Zone:Edit` + `DNS:Edit` + `Analytics:Read` *(disarankan)*, **atau** Global API Key |
 | **Cloudflare Account ID** | Account ID Cloudflare (lihat dashboard kanan atas domain) |
 | **Custom Field for Zone ID** | Nama custom field tempat Zone ID disimpan. Default: `Cloudflare Zone ID` |
 
+> **Izin API Token Cloudflare yang dibutuhkan:**
+> - `Zone` → `Zone` → `Edit` (untuk membuat / mengelola zona domain)
+> - `Zone` → `DNS` → `Edit` (untuk menambah, mengedit, & menghapus DNS records)
+> - `Zone` → `Analytics` → `Read` (untuk membaca GraphQL Analytics API pada tab DNS Analytics)
+> - *Zone Resources*: `All zones` atau spesifik zona domain Anda.
+> 
 > Modul mendeteksi jenis kredensial secara otomatis: token yang mengandung `@` & ≤37 karakter diperlakukan sebagai Global API Key (header `X-Auth-Email`/`X-Auth-Key`), selain itu dipakai sebagai Bearer Token.
 
 ### 4. Selesai
