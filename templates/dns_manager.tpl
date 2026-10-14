@@ -342,6 +342,8 @@
   margin-top: 14px;
   font-size: 13px;
   color: var(--dns-gray-700);
+}
+
 .dns-type-flex-wrap {
   display: flex;
   flex-direction: column;
