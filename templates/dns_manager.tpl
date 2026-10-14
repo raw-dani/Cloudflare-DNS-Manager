@@ -147,6 +147,158 @@
   text-overflow: ellipsis;
 }
 
+/* ===== MAIN TABS ===== */
+.dns-main-nav {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid var(--dns-gray-200);
+  margin-bottom: 22px;
+}
+
+.dns-main-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dns-gray-500);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: all .15s ease;
+  user-select: none;
+}
+
+.dns-main-tab svg {
+  width: 17px;
+  height: 17px;
+}
+
+.dns-main-tab:hover {
+  color: var(--dns-gray-800);
+}
+
+.dns-main-tab.active {
+  color: var(--dns-primary);
+  border-bottom-color: var(--dns-primary);
+}
+
+.dns-tab-pane {
+  display: block;
+}
+
+.dns-tab-pane.dns-hidden-tab {
+  display: none !important;
+}
+
+/* ===== ANALYTICS STYLES ===== */
+.dns-analytics-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.dns-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.dns-stat-card {
+  background: var(--dns-white);
+  border: 1px solid var(--dns-gray-200);
+  border-radius: var(--dns-radius-lg);
+  padding: 18px 20px;
+  box-shadow: var(--dns-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dns-stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--dns-gray-500);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dns-stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--dns-gray-800);
+  line-height: 1.2;
+}
+
+.dns-stat-sub {
+  font-size: 12px;
+  color: var(--dns-gray-400);
+}
+
+.dns-chart-container {
+  min-height: 220px;
+  position: relative;
+  width: 100%;
+}
+
+.dns-analytics-table-wrap {
+  overflow-x: auto;
+}
+
+.dns-analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.dns-analytics-table th,
+.dns-analytics-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--dns-gray-100);
+}
+
+.dns-analytics-table th {
+  background: var(--dns-gray-50);
+  color: var(--dns-gray-500);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-weight: 600;
+  text-align: left;
+}
+
+.dns-analytics-table tr:hover td {
+  background: var(--dns-gray-50);
+}
+
+.dns-analytics-progress-bg {
+  width: 100%;
+  max-width: 160px;
+  height: 8px;
+  background: var(--dns-gray-200);
+  border-radius: 999px;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+.dns-analytics-progress-bar {
+  height: 100%;
+  background: var(--dns-primary);
+  border-radius: 999px;
+}
+
 /* ===== CARDS ===== */
 .dns-card {
   background: var(--dns-white);
@@ -1006,6 +1158,21 @@
     </div>
   {else}
 
+  {* ============ MAIN NAVIGATION TABS ============ *}
+  <div class="dns-main-nav">
+    <button type="button" class="dns-main-tab active" data-target="tabRecords">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+      {$LANG.cfdnsmanager.tabRecords}
+    </button>
+    <button type="button" class="dns-main-tab" data-target="tabAnalytics">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      {$LANG.cfdnsmanager.tabAnalytics}
+    </button>
+  </div>
+
+  {* ============ TAB 1: DNS RECORDS & ROUTING ============ *}
+  <div class="dns-tab-pane" id="tabRecords">
+
   {* ============ NAMESERVERS CARD ============ *}
   <div class="dns-grid-2">
     <div class="dns-card">
@@ -1431,6 +1598,142 @@
 
     </div>
   </div>
+  </div>{* /#tabRecords *}
+
+  {* ============ TAB 2: DNS ANALYTICS ============ *}
+  <div class="dns-tab-pane dns-hidden-tab" id="tabAnalytics">
+
+    {* Filter & Notice Bar *}
+    <div class="dns-analytics-bar">
+      <div>
+        <span class="dns-chip active dns-analytics-range" data-range="24h">{$LANG.cfdnsmanager.range24h}</span>
+        <span class="dns-chip dns-analytics-range" data-range="7d">{$LANG.cfdnsmanager.range7d}</span>
+        <span class="dns-chip dns-analytics-range" data-range="30d">{$LANG.cfdnsmanager.range30d}</span>
+      </div>
+      <div style="font-size:12px; color:var(--dns-gray-500); display:flex; align-items:center; gap:6px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px; color:var(--dns-primary);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        {$LANG.cfdnsmanager.analyticsNotice}
+      </div>
+    </div>
+
+    {* Loading Indicator *}
+    <div id="analyticsLoading" style="display:none; text-align:center; padding:40px 20px;">
+      <div style="display:inline-block; width:32px; height:32px; border:3px solid var(--dns-gray-200); border-top-color:var(--dns-primary); border-radius:50%; animation:dns-spin 1s linear infinite;"></div>
+      <p style="margin-top:12px; font-size:13.5px; color:var(--dns-gray-500);">Memuat data analitik dari Cloudflare GraphQL...</p>
+    </div>
+
+    {* Analytics Error Message *}
+    <div id="analyticsError" class="dns-alert dns-alert-error" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span id="analyticsErrorMessage"></span>
+    </div>
+
+    {* Main Analytics Data Content *}
+    <div id="analyticsContent">
+      {* Stat Summary Cards *}
+      <div class="dns-stat-grid">
+        <div class="dns-stat-card">
+          <div class="dns-stat-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/></svg>
+            {$LANG.cfdnsmanager.totalQueries}
+          </div>
+          <div class="dns-stat-value" id="statTotalQueries">0</div>
+          <div class="dns-stat-sub">Semua query DNS</div>
+        </div>
+
+        <div class="dns-stat-card">
+          <div class="dns-stat-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px; color:#16a34a;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            {$LANG.cfdnsmanager.noErrorCount}
+          </div>
+          <div class="dns-stat-value" id="statNoError" style="color:#16a34a;">0</div>
+          <div class="dns-stat-sub" id="statSuccessRate">100% success rate</div>
+        </div>
+
+        <div class="dns-stat-card">
+          <div class="dns-stat-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px; color:#d97706;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {$LANG.cfdnsmanager.nxDomainCount}
+          </div>
+          <div class="dns-stat-value" id="statNxDomain" style="color:#d97706;">0</div>
+          <div class="dns-stat-sub">Query record tidak ada</div>
+        </div>
+
+        <div class="dns-stat-card">
+          <div class="dns-stat-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px; color:#2563eb;"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+            {$LANG.cfdnsmanager.topQueriedHost}
+          </div>
+          <div class="dns-stat-value" id="statTopHost" style="font-size:16px; word-break:break-all; font-family:var(--dns-mono);">-</div>
+          <div class="dns-stat-sub">Resolusi terbanyak</div>
+        </div>
+      </div>
+
+      {* Charts Grid *}
+      <div class="dns-grid-2">
+        {* Volume Over Time *}
+        <div class="dns-card">
+          <div class="dns-card-header">
+            <span class="dns-card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              {$LANG.cfdnsmanager.queryVolume}
+            </span>
+          </div>
+          <div class="dns-card-body">
+            <div class="dns-chart-container" style="height:240px;">
+              <canvas id="chartVolume"></canvas>
+            </div>
+          </div>
+        </div>
+
+        {* Queries by Record Type *}
+        <div class="dns-card">
+          <div class="dns-card-header">
+            <span class="dns-card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+              {$LANG.cfdnsmanager.queryTypeBreakdown}
+            </span>
+          </div>
+          <div class="dns-card-body">
+            <div class="dns-chart-container" style="height:240px;">
+              <canvas id="chartType"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {* Top Queries Table *}
+      <div class="dns-card">
+        <div class="dns-card-header">
+          <span class="dns-card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            {$LANG.cfdnsmanager.topQueriesTitle}
+          </span>
+        </div>
+        <div class="dns-card-body" style="padding:0;">
+          <div class="dns-analytics-table-wrap">
+            <table class="dns-analytics-table">
+              <thead>
+                <tr>
+                  <th style="width:50px;">#</th>
+                  <th>Hostname / Query Name</th>
+                  <th style="text-align:right; width:130px;">Queries</th>
+                  <th style="width:200px;">Distribusi</th>
+                </tr>
+              </thead>
+              <tbody id="topQueriesTableBody">
+                <tr>
+                  <td colspan="4" class="dns-text-center" style="padding:20px; color:var(--dns-gray-400);">Belum ada data query DNS.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>{* /#analyticsContent *}
+
+  </div>{* /#tabAnalytics *}
 
   {/if}{* end zoneId check *}
 
@@ -2028,6 +2331,319 @@
 
     document.getElementById('editRecordOverlay').classList.add('open');
   };
+
+  /* =========================================================================
+   * MAIN TAB SWITCHER (Records vs Analytics)
+   * ========================================================================= */
+  var mainTabs = document.querySelectorAll('.dns-main-tab');
+  var currentActiveTab = 'tabRecords';
+  var analyticsLoaded = false;
+  var currentAnalyticsRange = '24h';
+
+  mainTabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      var targetId = tab.getAttribute('data-target');
+      if (!targetId || targetId === currentActiveTab) { return; }
+
+      mainTabs.forEach(function (t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+
+      document.querySelectorAll('.dns-tab-pane').forEach(function (pane) {
+        pane.classList.add('dns-hidden-tab');
+      });
+
+      var activePane = document.getElementById(targetId);
+      if (activePane) {
+        activePane.classList.remove('dns-hidden-tab');
+      }
+
+      currentActiveTab = targetId;
+
+      if (targetId === 'tabAnalytics' && !analyticsLoaded) {
+        loadDnsAnalytics(currentAnalyticsRange);
+      }
+    });
+  });
+
+  /* =========================================================================
+   * DNS ANALYTICS (Cloudflare GraphQL Analytics API)
+   * ========================================================================= */
+  var rangeButtons = document.querySelectorAll('.dns-analytics-range');
+  rangeButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      rangeButtons.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentAnalyticsRange = btn.getAttribute('data-range') || '24h';
+      loadDnsAnalytics(currentAnalyticsRange);
+    });
+  });
+
+  function loadDnsAnalytics(range) {
+    var loadingEl = document.getElementById('analyticsLoading');
+    var contentEl = document.getElementById('analyticsContent');
+    var errorEl   = document.getElementById('analyticsError');
+    var errMsgEl  = document.getElementById('analyticsErrorMessage');
+
+    if (loadingEl) { loadingEl.style.display = 'block'; }
+    if (contentEl) { contentEl.style.opacity = '0.35'; }
+    if (errorEl)   { errorEl.style.display = 'none'; }
+
+    var url = window.location.href.split('#')[0];
+    var sep = url.indexOf('?') !== -1 ? '&' : '?';
+    var fetchUrl = url + sep + 'cfdnsmanager_action=getDnsAnalytics&range=' + encodeURIComponent(range);
+
+    fetch(fetchUrl, {
+      method: 'GET',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      if (loadingEl) { loadingEl.style.display = 'none'; }
+      if (contentEl) { contentEl.style.opacity = '1'; }
+
+      if (!data || !data.success) {
+        if (errorEl) {
+          errMsgEl.textContent = (data && data.message) ? data.message : 'Gagal memuat analitik DNS dari Cloudflare.';
+          errorEl.style.display = 'flex';
+        }
+        return;
+      }
+
+      analyticsLoaded = true;
+      renderDnsAnalytics(data);
+    })
+    .catch(function (err) {
+      if (loadingEl) { loadingEl.style.display = 'none'; }
+      if (contentEl) { contentEl.style.opacity = '1'; }
+      if (errorEl) {
+        errMsgEl.textContent = 'Terjadi kesalahan koneksi saat mengambil data GraphQL: ' + err.message;
+        errorEl.style.display = 'flex';
+      }
+    });
+  }
+
+  function formatNumber(num) {
+    return (num || 0).toLocaleString();
+  }
+
+  function renderDnsAnalytics(data) {
+    var summary = data.summary || {};
+    var timeSeries = data.timeSeries || [];
+    var byQueryType = data.byQueryType || [];
+    var byResponseCode = data.byResponseCode || [];
+    var topQueries = data.topQueries || [];
+
+    // 1. KPI Cards
+    var elTotal = document.getElementById('statTotalQueries');
+    var elNoError = document.getElementById('statNoError');
+    var elNx = document.getElementById('statNxDomain');
+    var elRate = document.getElementById('statSuccessRate');
+    var elTopHost = document.getElementById('statTopHost');
+
+    if (elTotal) { elTotal.textContent = formatNumber(summary.totalQueries); }
+    if (elNoError) { elNoError.textContent = formatNumber(summary.noErrorCount); }
+    if (elNx) { elNx.textContent = formatNumber(summary.nxDomainCount); }
+    if (elRate) { elRate.textContent = (summary.successRate || 100) + '% success rate'; }
+    if (elTopHost) { elTopHost.textContent = summary.topQuery || '-'; }
+
+    // 2. Charts
+    drawVolumeChart('chartVolume', timeSeries);
+    drawTypePieChart('chartType', byQueryType);
+
+    // 3. Top Queries Table
+    var tbody = document.getElementById('topQueriesTableBody');
+    if (tbody) {
+      if (!topQueries.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="dns-text-center" style="padding:22px; color:var(--dns-gray-400);">Tidak ada catatan query DNS pada periode ini.</td></tr>';
+      } else {
+        var total = summary.totalQueries > 0 ? summary.totalQueries : 1;
+        var html = '';
+        topQueries.forEach(function (item, idx) {
+          var name = (item.dimensions && item.dimensions.queryName) ? item.dimensions.queryName : '-';
+          var count = item.count || 0;
+          var pct = Math.round((count / total) * 100);
+          html += '<tr>' +
+            '<td style="color:var(--dns-gray-400); font-weight:600;">' + (idx + 1) + '</td>' +
+            '<td><strong class="dns-mono" style="color:var(--dns-gray-800);">' + escapeHtml(name) + '</strong></td>' +
+            '<td style="text-align:right; font-weight:600;">' + formatNumber(count) + '</td>' +
+            '<td>' +
+              '<div class="dns-analytics-progress-bg">' +
+                '<div class="dns-analytics-progress-bar" style="width:' + pct + '%;"></div>' +
+              '</div>' +
+              '<span style="font-size:12px; color:var(--dns-gray-500);">' + pct + '%</span>' +
+            '</td>' +
+          '</tr>';
+        });
+        tbody.innerHTML = html;
+      }
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, function (m) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+    });
+  }
+
+  /* Canvas Bar Chart for Volume Over Time */
+  function drawVolumeChart(canvasId, series) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) { return; }
+    var ctx = canvas.getContext('2d');
+    var w = canvas.offsetWidth || 400;
+    var h = 220;
+    canvas.width = w * window.devicePixelRatio || w;
+    canvas.height = h * window.devicePixelRatio || h;
+    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+
+    ctx.clearRect(0, 0, w, h);
+
+    if (!series || !series.length) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Belum ada data volume kueri', w / 2, h / 2);
+      return;
+    }
+
+    var max = 0;
+    series.forEach(function (s) { if (s.count > max) { max = s.count; } });
+    if (max === 0) { max = 1; }
+
+    var paddingLeft = 40;
+    var paddingBottom = 28;
+    var chartW = w - paddingLeft - 16;
+    var chartH = h - paddingBottom - 16;
+
+    // Draw grid lines
+    ctx.strokeStyle = '#f1f5f9';
+    ctx.lineWidth = 1;
+    for (var i = 0; i <= 4; i++) {
+      var y = 16 + (chartH / 4) * i;
+      ctx.beginPath();
+      ctx.moveTo(paddingLeft, y);
+      ctx.lineTo(w - 16, y);
+      ctx.stroke();
+
+      var val = Math.round(max - (max / 4) * i);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(formatNumber(val), paddingLeft - 6, y + 3);
+    }
+
+    var barWidth = Math.max(3, (chartW / series.length) - 4);
+    ctx.fillStyle = '#3b82f6';
+
+    series.forEach(function (s, idx) {
+      var barH = (s.count / max) * chartH;
+      var x = paddingLeft + (idx * (chartW / series.length)) + 2;
+      var y = 16 + (chartH - barH);
+
+      // Bar with rounded top
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(x, y, barWidth, barH, [3, 3, 0, 0]) : ctx.rect(x, y, barWidth, barH);
+      ctx.fill();
+
+      // Show a few timestamp labels
+      if (series.length <= 12 || idx % Math.ceil(series.length / 6) === 0) {
+        var dt = s.dimensions && s.dimensions.datetime ? s.dimensions.datetime : '';
+        var lbl = '';
+        if (dt) {
+          var d = new Date(dt);
+          lbl = (d.getMonth() + 1) + '/' + d.getDate() + ' ' + ('0' + d.getHours()).slice(-2) + ':00';
+        }
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '9.5px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(lbl, x + barWidth / 2, h - 8);
+      }
+    });
+  }
+
+  /* Canvas Donut Chart for Query Types Breakdown */
+  function drawTypePieChart(canvasId, items) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) { return; }
+    var ctx = canvas.getContext('2d');
+    var w = canvas.offsetWidth || 400;
+    var h = 220;
+    canvas.width = w * window.devicePixelRatio || w;
+    canvas.height = h * window.devicePixelRatio || h;
+    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+
+    ctx.clearRect(0, 0, w, h);
+
+    if (!items || !items.length) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Belum ada data tipe record', w / 2, h / 2);
+      return;
+    }
+
+    var total = 0;
+    items.forEach(function (it) { total += (it.count || 0); });
+    if (total === 0) { total = 1; }
+
+    var colors = ['#2563eb', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#64748b'];
+    var cx = Math.min(100, w / 4);
+    var cy = h / 2;
+    var radius = Math.min(65, (h / 2) - 16);
+    var innerRadius = radius * 0.58;
+
+    var startAngle = -Math.PI / 2;
+
+    items.forEach(function (it, idx) {
+      var slice = ((it.count || 0) / total) * 2 * Math.PI;
+      var endAngle = startAngle + slice;
+      var color = colors[idx % colors.length];
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, startAngle, endAngle);
+      ctx.arc(cx, cy, innerRadius, endAngle, startAngle, true);
+      ctx.closePath();
+      ctx.fill();
+
+      startAngle = endAngle;
+    });
+
+    // Donut Center text
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(items.length + ' Types', cx, cy + 4);
+
+    // Legend on the right
+    var legendX = cx + radius + 30;
+    var legendY = 28;
+    var rowHeight = 22;
+
+    items.slice(0, 7).forEach(function (it, idx) {
+      var color = colors[idx % colors.length];
+      var name = (it.dimensions && it.dimensions.queryType) ? it.dimensions.queryType : 'Other';
+      var cnt = it.count || 0;
+      var pct = Math.round((cnt / total) * 100);
+
+      // Color badge
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(legendX, legendY + (idx * rowHeight) + 6, 5, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Type Label
+      ctx.fillStyle = '#1e293b';
+      ctx.font = '600 12px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(name, legendX + 12, legendY + (idx * rowHeight) + 9);
+
+      // Percentage & Count
+      ctx.fillStyle = '#64748b';
+      ctx.font = '11px monospace';
+      ctx.fillText(formatNumber(cnt) + ' (' + pct + '%)', legendX + 75, legendY + (idx * rowHeight) + 9);
+    });
+  }
 })();
 {/literal}
 </script>

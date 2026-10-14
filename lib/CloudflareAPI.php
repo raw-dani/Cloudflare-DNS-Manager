@@ -672,4 +672,151 @@ class CloudflareAPI
             'message' => $message
         ];
     }
+
+    /**
+     * Get DNS Analytics from Cloudflare GraphQL Analytics API (Free & above)
+     *
+     * @param string $zoneId Zone Tag / Zone ID
+     * @param string $range '24h', '7d', '30d'
+     * @return array
+     */
+    public function getDnsAnalytics($zoneId, $range = '24h')
+    {
+        $now = time();
+        switch ($range) {
+            case '7d':
+                $start = gmdate('Y-m-d\TH:i:s\Z', $now - (7 * 86400));
+                break;
+            case '30d':
+                $start = gmdate('Y-m-d\TH:i:s\Z', $now - (30 * 86400));
+                break;
+            case '24h':
+            default:
+                $start = gmdate('Y-m-d\TH:i:s\Z', $now - 86400);
+                $range = '24h';
+                break;
+        }
+        $end = gmdate('Y-m-d\TH:i:s\Z', $now);
+
+        $query = 'query ZoneDnsAnalytics($zoneTag: String!, $start: Time!, $end: Time!) {
+          viewer {
+            zones(filter: { zoneTag: $zoneTag }) {
+              timeSeries: dnsAnalyticsAdaptiveGroups(
+                filter: { datetime_geq: $start, datetime_leq: $end }
+                limit: 100
+                orderBy: [datetime_ASC]
+              ) {
+                count
+                dimensions {
+                  datetime
+                }
+              }
+              byQueryType: dnsAnalyticsAdaptiveGroups(
+                filter: { datetime_geq: $start, datetime_leq: $end }
+                limit: 15
+                orderBy: [count_DESC]
+              ) {
+                count
+                dimensions {
+                  queryType
+                }
+              }
+              byResponseCode: dnsAnalyticsAdaptiveGroups(
+                filter: { datetime_geq: $start, datetime_leq: $end }
+                limit: 10
+                orderBy: [count_DESC]
+              ) {
+                count
+                dimensions {
+                  responseCode
+                }
+              }
+              topQueries: dnsAnalyticsAdaptiveGroups(
+                filter: { datetime_geq: $start, datetime_leq: $end }
+                limit: 15
+                orderBy: [count_DESC]
+              ) {
+                count
+                dimensions {
+                  queryName
+                }
+              }
+            }
+          }
+        }';
+
+        $payload = [
+            'query' => $query,
+            'variables' => [
+                'zoneTag' => $zoneId,
+                'start' => $start,
+                'end' => $end,
+            ],
+        ];
+
+        $response = $this->_call('POST', 'graphql', $payload);
+
+        if (!$response['success']) {
+            return [
+                'success' => false,
+                'message' => $response['message'] ?? 'Failed to communicate with Cloudflare GraphQL API.'
+            ];
+        }
+
+        // GraphQL returns data inside $response['result']['data']
+        $data = $response['result']['data'] ?? $response['result'] ?? [];
+        $errors = $response['result']['errors'] ?? [];
+
+        if (!empty($errors)) {
+            $errMsg = is_array($errors) ? json_encode($errors) : (string) $errors;
+            return [
+                'success' => false,
+                'message' => 'GraphQL error: ' . $errMsg
+            ];
+        }
+
+        $zones = $data['viewer']['zones'] ?? [];
+        $zoneAnalytics = !empty($zones[0]) ? $zones[0] : [];
+
+        $timeSeries     = $zoneAnalytics['timeSeries'] ?? [];
+        $byQueryType    = $zoneAnalytics['byQueryType'] ?? [];
+        $byResponseCode = $zoneAnalytics['byResponseCode'] ?? [];
+        $topQueries     = $zoneAnalytics['topQueries'] ?? [];
+
+        // Compute summary metrics
+        $totalQueries = 0;
+        foreach ($byQueryType as $item) {
+            $totalQueries += (int) ($item['count'] ?? 0);
+        }
+
+        $noErrorCount = 0;
+        $nxDomainCount = 0;
+        foreach ($byResponseCode as $item) {
+            $code = strtoupper($item['dimensions']['responseCode'] ?? '');
+            $cnt = (int) ($item['count'] ?? 0);
+            if ($code === 'NOERROR') {
+                $noErrorCount += $cnt;
+            } elseif ($code === 'NXDOMAIN') {
+                $nxDomainCount += $cnt;
+            }
+        }
+
+        $successRate = $totalQueries > 0 ? round(($noErrorCount / $totalQueries) * 100, 1) : 100;
+
+        return [
+            'success' => true,
+            'range' => $range,
+            'summary' => [
+                'totalQueries' => $totalQueries,
+                'noErrorCount' => $noErrorCount,
+                'nxDomainCount' => $nxDomainCount,
+                'successRate' => $successRate,
+                'topQuery' => !empty($topQueries[0]['dimensions']['queryName']) ? $topQueries[0]['dimensions']['queryName'] : '-',
+            ],
+            'timeSeries' => $timeSeries,
+            'byQueryType' => $byQueryType,
+            'byResponseCode' => $byResponseCode,
+            'topQueries' => $topQueries,
+        ];
+    }
 }

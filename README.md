@@ -23,6 +23,7 @@ Modul provisioning WHMCS yang mengintegrasikan **Cloudflare** langsung ke area k
 | 9. **Flush Cache** | Purge Everything cache Cloudflare satu klik dari header halaman |
 | 10. **URL Redirects** | Kelola Page Rules forwarding (301/302) dengan wildcard & capture group `$1` |
 | 11. **Pencarian & Filter** | Pencarian client-side + chip filter per tipe record dalam satu tabel |
+| 12. **DNS Analytics (GraphQL)** | Tab terpisah untuk memantau analitik query DNS Cloudflare (Free tier) dengan filter rentang waktu (24h, 7d, 30d), KPI queries & status, grafik tren volume, chart tipe record, dan tabel top 15 queries hostname |
 
 ---
 

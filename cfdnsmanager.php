@@ -867,6 +867,19 @@ function cfdnsmanager_ClientArea(array $params)
             'serviceId' => $serviceId
         ));
 
+        // AJAX endpoint for DNS Analytics
+        if ($action === 'getDnsAnalytics') {
+            header('Content-Type: application/json; charset=utf-8');
+            if (empty($zoneId)) {
+                echo json_encode(['success' => false, 'message' => 'Zone ID is not provisioned.']);
+                exit;
+            }
+            $range = trim($_REQUEST['range'] ?? '24h');
+            $analyticsResult = $cloudflareAPI->getDnsAnalytics($zoneId, $range);
+            echo json_encode($analyticsResult);
+            exit;
+        }
+
         if ($action === 'addRecord') {
             logModuleCall('cfdnsmanager', 'addRecord Flow', 'Starting addRecord action processing.', ['serviceId' => $serviceId, 'request_data' => $_REQUEST]);
 
