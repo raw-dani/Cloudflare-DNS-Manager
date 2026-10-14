@@ -1090,13 +1090,48 @@
             </div>
           </div>
 
-          <div class="dns-form-group">
+          <div class="dns-form-group dns-hidden-field" id="add_srvSummary" style="font-size:13px; color:var(--dns-gray-600); background:var(--dns-gray-50); border:1px solid var(--dns-gray-200); border-radius:8px; padding:10px 12px; margin-bottom:14px;">
+            <strong id="add_srvSummary_name" style="color:var(--dns-gray-800);">[name]</strong> points to <strong id="add_srvSummary_target" style="color:var(--dns-gray-800);">[target]</strong> and listens on <strong id="add_srvSummary_port" style="color:var(--dns-gray-800);">[port]</strong>.
+          </div>
+
+          <div class="dns-form-group" id="standardNameCol">
             <label class="dns-label" for="name">{$LANG.cfdnsmanager.name}</label>
             <input type="text" name="name" id="name" class="dns-input mono" placeholder="@" required>
             <small class="dns-help-text">Gunakan @ untuk root ({$domain}) atau subdomain seperti www. Nama akan otomatis dilengkapi dengan domain.</small>
           </div>
 
-          <div class="dns-form-group">
+          {* SRV Name + Priority Row *}
+          <div class="dns-form-row dns-hidden-field" id="srvNameRow" style="margin-bottom:14px;">
+            <div>
+              <label class="dns-label" for="srv_name">Name</label>
+              <input type="text" name="srv_name" id="srv_name" class="dns-input mono" placeholder="E.g. _sip._tcp.example.com">
+              <small class="dns-help-text">Format: _service._proto (e.g. _sip._tcp)</small>
+            </div>
+            <div>
+              <label class="dns-label" for="srv_priority">Priority</label>
+              <input type="number" name="srv_priority" id="srv_priority" class="dns-input" value="10" min="0">
+            </div>
+          </div>
+
+          {* SRV Weight + Port Row *}
+          <div class="dns-form-row dns-hidden-field" id="srvWeightPortRow" style="margin-bottom:14px;">
+            <div>
+              <label class="dns-label" for="srv_weight">Weight</label>
+              <input type="number" name="srv_weight" id="srv_weight" class="dns-input" value="5" min="0">
+            </div>
+            <div>
+              <label class="dns-label" for="srv_port">Port</label>
+              <input type="number" name="srv_port" id="srv_port" class="dns-input" placeholder="e.g. 5060" min="1" max="65535">
+            </div>
+          </div>
+
+          {* SRV Target *}
+          <div class="dns-form-group dns-hidden-field" id="srvTargetRow">
+            <label class="dns-label" for="srv_target">Target</label>
+            <input type="text" name="srv_target" id="srv_target" class="dns-input mono" placeholder="E.g. www.example.com">
+          </div>
+
+          <div class="dns-form-group" id="standardContentCol">
             <label class="dns-label" for="content">{$LANG.cfdnsmanager.content}</label>
             <textarea name="content" id="content" class="dns-textarea mono" rows="2" placeholder="192.0.2.1" required></textarea>
             <small class="dns-help-text" id="contentHelp"></small>
@@ -1297,6 +1332,9 @@
                 data-source="{if $record.source == 'cloudflare'}cloudflare{else}local{/if}"
                 data-ttl="{$record.ttl|default:'1'}"
                 data-priority="{$record.priority|default:'0'}"
+                data-srv-weight="{$record.srv_weight|default:'0'}"
+                data-srv-port="{$record.srv_port|default:'0'}"
+                data-srv-target="{$record.srv_target|default:''}"
                 data-proxied="{if isset($record.proxied) && $record.proxied}1{else}0{/if}">
               <td class="dns-center">
                 <input type="checkbox" class="dns-row-check" form="dnsBulkForm"
@@ -1457,13 +1495,48 @@
           </div>
         </div>
 
-        <div class="dns-form-group">
+        <div class="dns-form-group dns-hidden-field" id="edit_srvSummary" style="font-size:13px; color:var(--dns-gray-600); background:var(--dns-gray-50); border:1px solid var(--dns-gray-200); border-radius:8px; padding:10px 12px; margin-bottom:14px;">
+          <strong id="edit_srvSummary_name" style="color:var(--dns-gray-800);">[name]</strong> points to <strong id="edit_srvSummary_target" style="color:var(--dns-gray-800);">[target]</strong> and listens on <strong id="edit_srvSummary_port" style="color:var(--dns-gray-800);">[port]</strong>.
+        </div>
+
+        <div class="dns-form-group" id="edit_standardNameGroup">
           <label class="dns-label" for="edit_name">{$LANG.cfdnsmanager.name}</label>
           <input type="text" name="name" id="edit_name" class="dns-input mono" required>
           <small class="dns-help-text">Nama akan otomatis dilengkapi dengan domain jika belum lengkap.</small>
         </div>
 
-        <div class="dns-form-group">
+        {* SRV Name + Priority Row *}
+        <div class="dns-form-row dns-hidden-field" id="edit_srvNameRow" style="margin-bottom:14px;">
+          <div>
+            <label class="dns-label" for="edit_srv_name">Name</label>
+            <input type="text" name="srv_name" id="edit_srv_name" class="dns-input mono" placeholder="E.g. _sip._tcp.example.com">
+            <small class="dns-help-text">Format: _service._proto (e.g. _sip._tcp)</small>
+          </div>
+          <div>
+            <label class="dns-label" for="edit_srv_priority">Priority</label>
+            <input type="number" name="srv_priority" id="edit_srv_priority" class="dns-input" value="10" min="0">
+          </div>
+        </div>
+
+        {* SRV Weight + Port Row *}
+        <div class="dns-form-row dns-hidden-field" id="edit_srvWeightPortRow" style="margin-bottom:14px;">
+          <div>
+            <label class="dns-label" for="edit_srv_weight">Weight</label>
+            <input type="number" name="srv_weight" id="edit_srv_weight" class="dns-input" value="5" min="0">
+          </div>
+          <div>
+            <label class="dns-label" for="edit_srv_port">Port</label>
+            <input type="number" name="srv_port" id="edit_srv_port" class="dns-input" placeholder="e.g. 5060" min="1" max="65535">
+          </div>
+        </div>
+
+        {* SRV Target *}
+        <div class="dns-form-group dns-hidden-field" id="edit_srvTargetRow">
+          <label class="dns-label" for="edit_srv_target">Target</label>
+          <input type="text" name="srv_target" id="edit_srv_target" class="dns-input mono" placeholder="E.g. www.example.com">
+        </div>
+
+        <div class="dns-form-group" id="edit_standardContentGroup">
           <label class="dns-label" for="edit_content">{$LANG.cfdnsmanager.content}</label>
           <textarea name="content" id="edit_content" class="dns-textarea mono" rows="2" required></textarea>
         </div>
@@ -1494,14 +1567,49 @@
 (function () {
   'use strict';
 
+  /* ---------- Helper: Update SRV live sentence summary ---------- */
+  function updateSrvSummary(nameVal, targetVal, portVal, nameEl, targetEl, portEl) {
+    if (nameEl) { nameEl.textContent = nameVal ? nameVal : '[name]'; }
+    if (targetEl) { targetEl.textContent = targetVal ? targetVal : '[target]'; }
+    if (portEl) { portEl.textContent = portVal ? portVal : '[port]'; }
+  }
+
   /* ---------- Helper: tampilkan/sembunyikan field per tipe record ---------- */
-  function applyTypeVisibility(typeEl, priorityGroup, proxyGroup) {
+  function applyTypeVisibility(typeEl, priorityGroup, proxyGroup, isEdit) {
     var t = (typeEl.value || '').toUpperCase();
+    var isSrv = (t === 'SRV');
+    var isMx = (t === 'MX');
+
     if (priorityGroup) {
-      priorityGroup.classList.toggle('dns-hidden-field', !(t === 'MX' || t === 'SRV'));
+      priorityGroup.classList.toggle('dns-hidden-field', !(isMx));
     }
     if (proxyGroup) {
       proxyGroup.classList.toggle('dns-hidden-field', !(t === 'A' || t === 'AAAA' || t === 'CNAME'));
+    }
+
+    var prefix = isEdit ? 'edit_' : '';
+    var srvSummary       = document.getElementById(isEdit ? 'edit_srvSummary' : 'add_srvSummary');
+    var srvNameRow       = document.getElementById(isEdit ? 'edit_srvNameRow' : 'srvNameRow');
+    var srvWeightPortRow = document.getElementById(isEdit ? 'edit_srvWeightPortRow' : 'srvWeightPortRow');
+    var srvTargetRow     = document.getElementById(isEdit ? 'edit_srvTargetRow' : 'srvTargetRow');
+    var stdNameCol       = document.getElementById(isEdit ? 'edit_standardNameGroup' : 'standardNameCol');
+    var stdContentCol    = document.getElementById(isEdit ? 'edit_standardContentGroup' : 'standardContentCol');
+
+    if (srvSummary) { srvSummary.classList.toggle('dns-hidden-field', !isSrv); }
+    if (srvNameRow) { srvNameRow.classList.toggle('dns-hidden-field', !isSrv); }
+    if (srvWeightPortRow) { srvWeightPortRow.classList.toggle('dns-hidden-field', !isSrv); }
+    if (srvTargetRow) { srvTargetRow.classList.toggle('dns-hidden-field', !isSrv); }
+
+    if (stdNameCol) { stdNameCol.classList.toggle('dns-hidden-field', isSrv); }
+    if (stdContentCol) { stdContentCol.classList.toggle('dns-hidden-field', isSrv); }
+
+    var stdNameInput = document.getElementById(isEdit ? 'edit_name' : 'name');
+    var stdContentInput = document.getElementById(isEdit ? 'edit_content' : 'content');
+    if (stdNameInput) {
+      if (isSrv) { stdNameInput.removeAttribute('required'); } else { stdNameInput.setAttribute('required', 'required'); }
+    }
+    if (stdContentInput) {
+      if (isSrv) { stdContentInput.removeAttribute('required'); } else { stdContentInput.setAttribute('required', 'required'); }
     }
   }
 
@@ -1511,6 +1619,25 @@
     var typeEl      = document.getElementById('type');
     var contentEl   = document.getElementById('content');
     var contentHelp = document.getElementById('contentHelp');
+
+    var srvNameInput   = document.getElementById('srv_name');
+    var srvPortInput   = document.getElementById('srv_port');
+    var srvTargetInput = document.getElementById('srv_target');
+
+    function refreshAddSrvSummary() {
+      updateSrvSummary(
+        srvNameInput ? srvNameInput.value.trim() : '',
+        srvTargetInput ? srvTargetInput.value.trim() : '',
+        srvPortInput ? srvPortInput.value.trim() : '',
+        document.getElementById('add_srvSummary_name'),
+        document.getElementById('add_srvSummary_target'),
+        document.getElementById('add_srvSummary_port')
+      );
+    }
+
+    if (srvNameInput) { srvNameInput.addEventListener('input', refreshAddSrvSummary); }
+    if (srvPortInput) { srvPortInput.addEventListener('input', refreshAddSrvSummary); }
+    if (srvTargetInput) { srvTargetInput.addEventListener('input', refreshAddSrvSummary); }
 
     var placeholders = {
       A: '192.0.2.1',
@@ -1530,7 +1657,7 @@
       TXT: 'Nilai teks bebas, misalnya SPF/DKIM/verifikasi',
       NS: 'Authoritative nameserver, contoh: ns1.example.com',
       CAA: 'Format: flags tag "value", contoh: 0 issue "letsencrypt.org"',
-      SRV: 'Contoh: _service._proto.target (atur juga prioritas)'
+      SRV: 'Format: _service._proto, Priority, Weight, Port, Target'
     };
 
     function onAddTypeChange() {
@@ -1538,18 +1665,89 @@
       applyTypeVisibility(
         typeEl,
         document.getElementById('priorityCol'),
-        document.getElementById('proxyCol')
+        document.getElementById('proxyCol'),
+        false
       );
       contentEl.placeholder = placeholders[t] || '';
       if (contentHelp) { contentHelp.textContent = helps[t] || ''; }
+      if (t === 'SRV') { refreshAddSrvSummary(); }
     }
 
     typeEl.addEventListener('change', onAddTypeChange);
     onAddTypeChange();
 
     addForm.addEventListener('submit', function (e) {
+      var t = typeEl.value.toUpperCase();
+      if (t === 'SRV') {
+        var sName = srvNameInput ? srvNameInput.value.trim() : '';
+        var sTarget = srvTargetInput ? srvTargetInput.value.trim() : '';
+        var sPort = srvPortInput ? srvPortInput.value.trim() : '';
+        if (!sName || !sTarget || !sPort) {
+          e.preventDefault();
+          alert('Silakan lengkapi Name, Target, dan Port untuk SRV record.');
+          return false;
+        }
+        var stdName = document.getElementById('name');
+        var stdContent = document.getElementById('content');
+        if (stdName) { stdName.value = sName; }
+        if (stdContent) { stdContent.value = sTarget; }
+        return true;
+      }
+
       var name = document.getElementById('name').value.trim();
       var content = contentEl.value.trim();
+      if (!name || !content) {
+        e.preventDefault();
+        alert('Please fill in all required fields.');
+        return false;
+      }
+      return true;
+    });
+  }
+
+  /* ---------- Edit form: SRV live summary & submit check ---------- */
+  var editForm = document.getElementById('dnsEditForm');
+  if (editForm) {
+    var editSrvNameInput   = document.getElementById('edit_srv_name');
+    var editSrvPortInput   = document.getElementById('edit_srv_port');
+    var editSrvTargetInput = document.getElementById('edit_srv_target');
+
+    function refreshEditSrvSummary() {
+      updateSrvSummary(
+        editSrvNameInput ? editSrvNameInput.value.trim() : '',
+        editSrvTargetInput ? editSrvTargetInput.value.trim() : '',
+        editSrvPortInput ? editSrvPortInput.value.trim() : '',
+        document.getElementById('edit_srvSummary_name'),
+        document.getElementById('edit_srvSummary_target'),
+        document.getElementById('edit_srvSummary_port')
+      );
+    }
+
+    if (editSrvNameInput) { editSrvNameInput.addEventListener('input', refreshEditSrvSummary); }
+    if (editSrvPortInput) { editSrvPortInput.addEventListener('input', refreshEditSrvSummary); }
+    if (editSrvTargetInput) { editSrvTargetInput.addEventListener('input', refreshEditSrvSummary); }
+
+    editForm.addEventListener('submit', function (e) {
+      var editType = document.getElementById('edit_type');
+      var t = editType ? editType.value.toUpperCase() : '';
+      if (t === 'SRV') {
+        var sName = editSrvNameInput ? editSrvNameInput.value.trim() : '';
+        var sTarget = editSrvTargetInput ? editSrvTargetInput.value.trim() : '';
+        var sPort = editSrvPortInput ? editSrvPortInput.value.trim() : '';
+        if (!sName || !sTarget || !sPort) {
+          e.preventDefault();
+          alert('Silakan lengkapi Name, Target, dan Port untuk SRV record.');
+          return false;
+        }
+        var stdName = document.getElementById('edit_name');
+        var stdContent = document.getElementById('edit_content');
+        if (stdName) { stdName.value = sName; }
+        if (stdContent) { stdContent.value = sTarget; }
+        return true;
+      }
+
+      var name = document.getElementById('edit_name').value.trim();
+      var content = document.getElementById('edit_content').value.trim();
       if (!name || !content) {
         e.preventDefault();
         alert('Please fill in all required fields.');
@@ -1753,14 +1951,59 @@
     document.getElementById('edit_recordId').value = recordId;
 
     var nameEl = row.querySelector('.dns-record-name');
-    document.getElementById('edit_name').value = nameEl ? nameEl.textContent.trim() : '';
+    var rawName = nameEl ? nameEl.textContent.trim() : '';
+    document.getElementById('edit_name').value = rawName;
 
     var full = row.querySelector('.full-content');
-    document.getElementById('edit_content').value = full ? full.textContent.trim() : '';
+    var rawContent = full ? full.textContent.trim() : '';
+    document.getElementById('edit_content').value = rawContent;
 
     /* Priority dari data-priority (hanya relevan MX/SRV) */
     var prioVal = parseInt(ds.priority, 10);
-    document.getElementById('edit_priority').value = isNaN(prioVal) || prioVal <= 0 ? 0 : prioVal;
+    var effectivePriority = isNaN(prioVal) || prioVal < 0 ? 0 : prioVal;
+    document.getElementById('edit_priority').value = effectivePriority;
+
+    /* SRV specific fields population */
+    var srvPrioInput = document.getElementById('edit_srv_priority');
+    var srvWeightInput = document.getElementById('edit_srv_weight');
+    var srvPortInput = document.getElementById('edit_srv_port');
+    var srvTargetInput = document.getElementById('edit_srv_target');
+    var srvNameInput = document.getElementById('edit_srv_name');
+
+    if (srvNameInput) { srvNameInput.value = rawName; }
+    if (srvPrioInput) { srvPrioInput.value = effectivePriority; }
+
+    var weightVal = parseInt(ds.srvWeight, 10);
+    var portVal = parseInt(ds.srvPort, 10);
+    var targetVal = ds.srvTarget || '';
+
+    // If dataset doesn't have it (e.g. raw content like "5 5060 target.com" or "10 5 5060 target.com")
+    if ((!portVal || !targetVal) && type === 'SRV' && rawContent) {
+      var parts = rawContent.split(/\s+/);
+      if (parts.length === 3) {
+        weightVal = parseInt(parts[0], 10) || 0;
+        portVal = parseInt(parts[1], 10) || 0;
+        targetVal = parts[2] || '';
+      } else if (parts.length >= 4) {
+        if (!effectivePriority) { effectivePriority = parseInt(parts[0], 10) || 0; }
+        weightVal = parseInt(parts[1], 10) || 0;
+        portVal = parseInt(parts[2], 10) || 0;
+        targetVal = parts[3] || '';
+      }
+    }
+
+    if (srvWeightInput) { srvWeightInput.value = isNaN(weightVal) ? 0 : weightVal; }
+    if (srvPortInput) { srvPortInput.value = isNaN(portVal) ? '' : (portVal > 0 ? portVal : ''); }
+    if (srvTargetInput) { srvTargetInput.value = targetVal || (type === 'SRV' ? rawContent : ''); }
+
+    updateSrvSummary(
+      rawName,
+      targetVal || rawContent,
+      portVal > 0 ? portVal : '',
+      document.getElementById('edit_srvSummary_name'),
+      document.getElementById('edit_srvSummary_target'),
+      document.getElementById('edit_srvSummary_port')
+    );
 
     /* Proxy dari data-proxied */
     document.getElementById('edit_proxied').checked = ds.proxied === '1';
@@ -1768,7 +2011,8 @@
     applyTypeVisibility(
       document.getElementById('edit_type'),
       document.getElementById('edit_priorityGroup'),
-      document.getElementById('edit_proxyGroup')
+      document.getElementById('edit_proxyGroup'),
+      true
     );
 
     /* Reaktif saat tipe diubah di dalam modal edit */
@@ -1777,7 +2021,8 @@
       applyTypeVisibility(
         editType,
         document.getElementById('edit_priorityGroup'),
-        document.getElementById('edit_proxyGroup')
+        document.getElementById('edit_proxyGroup'),
+        true
       );
     };
 

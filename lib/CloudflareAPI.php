@@ -385,25 +385,48 @@ class CloudflareAPI
      * @param string $comment Optional comment for the record
      * @return array
      */
-    public function addDnsRecord($zoneId, $type, $name, $content, $ttl = 1, $priority = null, $proxied = false, $comment = '')
+    /**
+     * Add a new DNS record to a zone.
+     *
+     * @param string $zoneId The ID of the zone.
+     * @param string $type Record type (A, CNAME, MX, TXT, SRV, etc.)
+     * @param string $name Record name (e.g., 'www', '@')
+     * @param string $content Record content (IP address, target domain, text)
+     * @param int $ttl Time To Live (1 for auto)
+     * @param int|null $priority Priority for MX/SRV records
+     * @param bool $proxied Whether the record should be proxied through Cloudflare
+     * @param string $comment Optional comment for the record
+     * @param array|null $data Extra record data (for SRV: priority, weight, port, target)
+     * @return array
+     */
+    public function addDnsRecord($zoneId, $type, $name, $content, $ttl = 1, $priority = null, $proxied = false, $comment = '', $data = null)
     {
-        $data = [
+        $payload = [
             'name' => $name,
             'ttl' => $ttl,
             'type' => $type,
-            'content' => $content,
             'proxied' => $proxied,
         ];
 
+        if ($type === 'SRV' && !empty($data) && is_array($data)) {
+            $payload['data'] = [
+                'priority' => (int) ($data['priority'] ?? $priority ?? 0),
+                'weight' => (int) ($data['weight'] ?? 0),
+                'port' => (int) ($data['port'] ?? 0),
+                'target' => (string) ($data['target'] ?? $content),
+            ];
+        } else {
+            $payload['content'] = $content;
+            if ($priority !== null && in_array($type, ['MX', 'SRV'])) {
+                $payload['priority'] = (int) $priority;
+            }
+        }
+
         if (!empty($comment)) {
-            $data['comment'] = $comment;
+            $payload['comment'] = $comment;
         }
 
-        if ($priority !== null && $type === 'MX') {
-            $data['priority'] = $priority;
-        }
-
-        $response = $this->_call('POST', 'zones/' . $zoneId . '/dns_records', $data);
+        $response = $this->_call('POST', 'zones/' . $zoneId . '/dns_records', $payload);
         if ($response['success']) {
             // If proxy is enabled, configure SSL settings
             if ($proxied) {
@@ -432,30 +455,40 @@ class CloudflareAPI
      * @param string $name Record name
      * @param string $content Record content
      * @param int $ttl Time To Live
-     * @param int|null $priority Priority for MX records
+     * @param int|null $priority Priority for MX/SRV records
      * @param bool $proxied Whether the record should be proxied through Cloudflare
      * @param string $comment Optional comment for the record
+     * @param array|null $data Extra record data (for SRV: priority, weight, port, target)
      * @return array
      */
-    public function updateDnsRecord($zoneId, $recordId, $type, $name, $content, $ttl = 1, $priority = null, $proxied = false, $comment = '')
+    public function updateDnsRecord($zoneId, $recordId, $type, $name, $content, $ttl = 1, $priority = null, $proxied = false, $comment = '', $data = null)
     {
-        $data = [
+        $payload = [
             'name' => $name,
             'ttl' => $ttl,
             'type' => $type,
-            'content' => $content,
             'proxied' => $proxied,
         ];
 
+        if ($type === 'SRV' && !empty($data) && is_array($data)) {
+            $payload['data'] = [
+                'priority' => (int) ($data['priority'] ?? $priority ?? 0),
+                'weight' => (int) ($data['weight'] ?? 0),
+                'port' => (int) ($data['port'] ?? 0),
+                'target' => (string) ($data['target'] ?? $content),
+            ];
+        } else {
+            $payload['content'] = $content;
+            if ($priority !== null && in_array($type, ['MX', 'SRV'])) {
+                $payload['priority'] = (int) $priority;
+            }
+        }
+
         if (!empty($comment)) {
-            $data['comment'] = $comment;
+            $payload['comment'] = $comment;
         }
 
-        if ($priority !== null && $type === 'MX') {
-            $data['priority'] = $priority;
-        }
-
-        $response = $this->_call('PUT', 'zones/' . $zoneId . '/dns_records/' . $recordId, $data);
+        $response = $this->_call('PUT', 'zones/' . $zoneId . '/dns_records/' . $recordId, $payload);
         if ($response['success']) {
             // Configure SSL based on proxy setting
             $sslResult = $this->configureSslForProxy($zoneId, $proxied);

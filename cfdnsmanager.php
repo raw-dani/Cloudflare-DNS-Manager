@@ -876,8 +876,31 @@ function cfdnsmanager_ClientArea(array $params)
             // Decode HTML entities to prevent issues with quotes and special characters
             $content = html_entity_decode($content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $ttl = (int) ($_REQUEST['ttl'] ?? 1); // Default to 1 (auto)
-            $priority = (int) ($_REQUEST['priority'] ?? 0); // For MX records
+            $priority = (int) ($_REQUEST['priority'] ?? 0); // For MX/SRV records
             $proxied = isset($_REQUEST['proxied']) && $_REQUEST['proxied'] == '1'; // For A records
+
+            $srvData = null;
+            if ($type === 'SRV') {
+                $srvPriority = (int) ($_REQUEST['srv_priority'] ?? $priority);
+                $srvWeight   = (int) ($_REQUEST['srv_weight'] ?? 0);
+                $srvPort     = (int) ($_REQUEST['srv_port'] ?? 0);
+                $srvTarget   = trim($_REQUEST['srv_target'] ?? '');
+                $srvName     = trim($_REQUEST['srv_name'] ?? '');
+
+                if (!empty($srvName)) {
+                    $name = $srvName;
+                }
+                if (!empty($srvTarget)) {
+                    $content = $srvTarget;
+                }
+                $priority = $srvPriority;
+                $srvData = [
+                    'priority' => $srvPriority,
+                    'weight'   => $srvWeight,
+                    'port'     => $srvPort,
+                    'target'   => $content,
+                ];
+            }
 
             // Debug: Log the form data
             logModuleCall('cfdnsmanager', 'addRecord Debug', 'Form data received', array(
@@ -886,6 +909,7 @@ function cfdnsmanager_ClientArea(array $params)
                 'content' => $content,
                 'ttl' => $ttl,
                 'priority' => $priority,
+                'srvData' => $srvData,
                 'zoneId' => $zoneId,
                 'domain' => $domain
             ));
@@ -913,12 +937,18 @@ function cfdnsmanager_ClientArea(array $params)
             } else {
                 logModuleCall('cfdnsmanager', 'addRecord Flow', 'Validation passed, attempting database insert.', ['serviceId' => $serviceId]);
                 try {
+                    // For local database storage, if SRV, compose standard SRV content format or target
+                    $storedContent = $content;
+                    if ($type === 'SRV' && !empty($srvData)) {
+                        $storedContent = $srvData['weight'] . ' ' . $srvData['port'] . ' ' . $srvData['target'];
+                    }
+
                     // Step 1: Save to database first
                     $recordId = Capsule::table('mod_cfdnsmanager_records')->insertGetId([
                         'serviceid' => $serviceId,
                         'type' => $type,
                         'name' => $nameToUse,
-                        'content' => $content,
+                        'content' => $storedContent,
                         'ttl' => $ttl,
                         'priority' => $priority,
                         'proxied' => $proxied,
@@ -930,7 +960,7 @@ function cfdnsmanager_ClientArea(array $params)
                     logModuleCall('cfdnsmanager', 'addRecord Flow', 'Database insert successful.', ['recordId' => $recordId, 'serviceId' => $serviceId]);
 
                     // Step 2: Try to sync to Cloudflare
-                    $addResult = $cloudflareAPI->addDnsRecord($zoneId, $type, $nameToUse, $content, $ttl, $priority, $proxied, 'DNS record added via WHMCS Cloudflare DNS Manager');
+                    $addResult = $cloudflareAPI->addDnsRecord($zoneId, $type, $nameToUse, $content, $ttl, $priority, $proxied, 'DNS record added via WHMCS Cloudflare DNS Manager', $srvData);
                     logModuleCall('cfdnsmanager', 'addRecord Debug', 'Cloudflare API call result', $addResult);
 
                     if ($addResult['success']) {
@@ -939,6 +969,7 @@ function cfdnsmanager_ClientArea(array $params)
                             ->where('id', $recordId)
                             ->update([
                                 'cloudflare_record_id' => $addResult['result']['id'] ?? null,
+                                'content' => $addResult['result']['content'] ?? $storedContent,
                                 'sync_status' => 'synced',
                                 'synced_at' => date('Y-m-d H:i:s'),
                                 'sync_error' => null
@@ -987,6 +1018,29 @@ function cfdnsmanager_ClientArea(array $params)
                 $priority = (int) ($_REQUEST['priority'] ?? 0);
                 $proxied = isset($_REQUEST['proxied']) && $_REQUEST['proxied'] == '1';
 
+                $srvData = null;
+                if ($type === 'SRV') {
+                    $srvPriority = (int) ($_REQUEST['srv_priority'] ?? $priority);
+                    $srvWeight   = (int) ($_REQUEST['srv_weight'] ?? 0);
+                    $srvPort     = (int) ($_REQUEST['srv_port'] ?? 0);
+                    $srvTarget   = trim($_REQUEST['srv_target'] ?? '');
+                    $srvName     = trim($_REQUEST['srv_name'] ?? '');
+
+                    if (!empty($srvName)) {
+                        $name = $srvName;
+                    }
+                    if (!empty($srvTarget)) {
+                        $content = $srvTarget;
+                    }
+                    $priority = $srvPriority;
+                    $srvData = [
+                        'priority' => $srvPriority,
+                        'weight'   => $srvWeight,
+                        'port'     => $srvPort,
+                        'target'   => $content,
+                    ];
+                }
+
                 if (empty($type) || empty($name) || empty($content)) {
                     $status = 'error';
                     $msg = $_LANG['cfdnsmanager']['allFieldsRequiredEdit'];
@@ -1003,7 +1057,12 @@ function cfdnsmanager_ClientArea(array $params)
                     }
 
                     try {
-                        $editResult = $cloudflareAPI->updateDnsRecord($zoneId, $recordId, $type, $nameToUse, $content, $ttl, $priority, $proxied, 'DNS record updated via WHMCS Cloudflare DNS Manager');
+                        $storedContent = $content;
+                        if ($type === 'SRV' && !empty($srvData)) {
+                            $storedContent = $srvData['weight'] . ' ' . $srvData['port'] . ' ' . $srvData['target'];
+                        }
+
+                        $editResult = $cloudflareAPI->updateDnsRecord($zoneId, $recordId, $type, $nameToUse, $content, $ttl, $priority, $proxied, 'DNS record updated via WHMCS Cloudflare DNS Manager', $srvData);
                     logModuleCall('cfdnsmanager', 'editRecord Debug', 'API call result', $editResult);
                     if ($editResult['success']) {
                         // Update local database record as well
@@ -1013,7 +1072,7 @@ function cfdnsmanager_ClientArea(array $params)
                             ->update([
                                 'type' => $type,
                                 'name' => $nameToUse,
-                                'content' => $content,
+                                'content' => $storedContent,
                                 'ttl' => $ttl,
                                 'priority' => $priority,
                                 'proxied' => $proxied,
@@ -1554,12 +1613,23 @@ function cfdnsmanager_ClientArea(array $params)
         $getRecordsResult = $cloudflareAPI->getDnsRecords($zoneId);
         if ($getRecordsResult['success']) {
             $allRecords = $getRecordsResult['records'];
-            // Filter for A, CNAME, MX, TXT records
-            $allowedTypes = ['A', 'CNAME', 'MX', 'TXT'];
+            // Filter for supported DNS record types
+            $allowedTypes = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'CAA', 'SRV'];
             foreach ($allRecords as $record) {
                 // Ensure record is an array, not stdClass object
                 $recordArray = (array) $record;
                 if (isset($recordArray['type']) && in_array($recordArray['type'], $allowedTypes)) {
+                    // Normalize SRV data if provided in Cloudflare response
+                    if ($recordArray['type'] === 'SRV' && !empty($recordArray['data'])) {
+                        $srvData = (array) $recordArray['data'];
+                        $recordArray['srv_priority'] = $srvData['priority'] ?? ($recordArray['priority'] ?? 0);
+                        $recordArray['srv_weight']   = $srvData['weight'] ?? 0;
+                        $recordArray['srv_port']     = $srvData['port'] ?? 0;
+                        $recordArray['srv_target']   = $srvData['target'] ?? '';
+                        if (empty($recordArray['priority']) && isset($recordArray['srv_priority'])) {
+                            $recordArray['priority'] = $recordArray['srv_priority'];
+                        }
+                    }
                     $cloudflareRecords[] = $recordArray;
                 }
             }
