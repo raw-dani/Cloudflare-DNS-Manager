@@ -317,9 +317,71 @@
 }
 
 .dns-chart-container {
-  min-height: 220px;
+  min-height: 280px;
   position: relative;
   width: 100%;
+}
+
+.dns-chart-card-desc {
+  font-size: 13px;
+  color: var(--dns-gray-500);
+  line-height: 1.45;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--dns-gray-200);
+}
+
+.dns-chart-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--dns-gray-50);
+  border: 1px solid var(--dns-gray-200);
+  border-radius: var(--dns-radius);
+  padding: 10px 14px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--dns-gray-700);
+}
+
+.dns-type-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.dns-type-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--dns-gray-50);
+  border: 1px solid var(--dns-gray-200);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.dns-type-item-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--dns-gray-800);
+}
+
+.dns-type-item-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dns-type-item-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--dns-gray-600);
 }
 
 .dns-analytics-table-wrap {
@@ -1772,8 +1834,15 @@
             </span>
           </div>
           <div class="dns-card-body">
-            <div class="dns-chart-container" style="height:240px;">
+            <p class="dns-chart-card-desc">
+              Grafik menunjukkan fluktuasi jumlah resolusi kueri nama domain Anda dari waktu ke waktu. Puncak (peak) menandakan lonjakan traffic atau akses pengunjung.
+            </p>
+            <div class="dns-chart-container" style="height:280px;">
               <canvas id="chartVolume"></canvas>
+            </div>
+            <div class="dns-chart-summary-bar" id="chartVolumeSummary">
+              <span>Rata-rata kueri per interval: <strong id="valAvgQueries">0</strong></span>
+              <span>Puncak tertinggi: <strong id="valPeakQueries" style="color:var(--dns-primary);">0</strong></span>
             </div>
           </div>
         </div>
@@ -1787,8 +1856,14 @@
             </span>
           </div>
           <div class="dns-card-body">
-            <div class="dns-chart-container" style="height:240px;">
+            <p class="dns-chart-card-desc">
+              Proporsi jenis DNS record yang paling banyak diminta oleh pengunjung atau aplikasi luar (misal: <strong>A/AAAA</strong> untuk website, <strong>MX</strong> untuk email).
+            </p>
+            <div class="dns-chart-container" style="height:280px;">
               <canvas id="chartType"></canvas>
+            </div>
+            <div id="chartTypeBreakdownList" class="dns-type-list">
+              <!-- Item breakdown list rendered via JS -->
             </div>
           </div>
         </div>
@@ -2577,13 +2652,13 @@
     });
   }
 
-  /* Canvas Bar Chart for Volume Over Time */
+  /* Canvas Bar / Smooth Area Chart for Volume Over Time */
   function drawVolumeChart(canvasId, series) {
     var canvas = document.getElementById(canvasId);
     if (!canvas) { return; }
     var ctx = canvas.getContext('2d');
-    var w = canvas.offsetWidth || 400;
-    var h = 220;
+    var w = canvas.offsetWidth || 500;
+    var h = 280;
     canvas.width = w * window.devicePixelRatio || w;
     canvas.height = h * window.devicePixelRatio || h;
     ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
@@ -2592,102 +2667,140 @@
 
     if (!series || !series.length) {
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '13px sans-serif';
+      ctx.font = '14px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('Belum ada data volume kueri', w / 2, h / 2);
+      ctx.fillText('Belum ada data volume kueri pada rentang waktu ini', w / 2, h / 2);
+      var avgEl = document.getElementById('valAvgQueries');
+      var peakEl = document.getElementById('valPeakQueries');
+      if (avgEl) { avgEl.textContent = '0'; }
+      if (peakEl) { peakEl.textContent = '0'; }
       return;
     }
 
     var max = 0;
-    series.forEach(function (s) { if (s.count > max) { max = s.count; } });
+    var sum = 0;
+    series.forEach(function (s) {
+      var c = parseInt(s.count, 10) || 0;
+      sum += c;
+      if (c > max) { max = c; }
+    });
     if (max === 0) { max = 1; }
 
-    var paddingLeft = 40;
-    var paddingBottom = 28;
-    var chartW = w - paddingLeft - 16;
-    var chartH = h - paddingBottom - 16;
+    var avg = Math.round(sum / series.length);
+    var avgEl = document.getElementById('valAvgQueries');
+    var peakEl = document.getElementById('valPeakQueries');
+    if (avgEl) { avgEl.textContent = formatNumber(avg) + ' queries'; }
+    if (peakEl) { peakEl.textContent = formatNumber(max) + ' queries'; }
 
-    // Draw grid lines
-    ctx.strokeStyle = '#f1f5f9';
+    var paddingLeft = 50;
+    var paddingBottom = 32;
+    var paddingTop = 20;
+    var chartW = w - paddingLeft - 20;
+    var chartH = h - paddingBottom - paddingTop;
+
+    // Draw horizontal grid lines & labels
+    ctx.strokeStyle = '#e2e8f0';
     ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+
     for (var i = 0; i <= 4; i++) {
-      var y = 16 + (chartH / 4) * i;
+      var y = paddingTop + (chartH / 4) * i;
       ctx.beginPath();
       ctx.moveTo(paddingLeft, y);
       ctx.lineTo(w - 16, y);
       ctx.stroke();
 
       var val = Math.round(max - (max / 4) * i);
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '10px monospace';
+      ctx.fillStyle = '#64748b';
+      ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.textAlign = 'right';
-      ctx.fillText(formatNumber(val), paddingLeft - 6, y + 3);
+      ctx.fillText(formatNumber(val), paddingLeft - 8, y + 4);
     }
+    ctx.setLineDash([]);
 
-    var barWidth = Math.max(3, (chartW / series.length) - 4);
-    ctx.fillStyle = '#3b82f6';
+    // Calculate bar positions
+    var n = series.length;
+    var slotW = chartW / n;
+    var barWidth = Math.max(4, Math.min(28, slotW * 0.65));
 
+    // Draw Gradient Bars
     series.forEach(function (s, idx) {
-      var barH = (s.count / max) * chartH;
-      var x = paddingLeft + (idx * (chartW / series.length)) + 2;
-      var y = 16 + (chartH - barH);
+      var c = parseInt(s.count, 10) || 0;
+      var barH = Math.max(3, (c / max) * chartH);
+      var x = paddingLeft + (idx * slotW) + (slotW - barWidth) / 2;
+      var y = paddingTop + (chartH - barH);
 
-      // Bar with rounded top
+      var grad = ctx.createLinearGradient(0, y, 0, paddingTop + chartH);
+      grad.addColorStop(0, '#2563eb');
+      grad.addColorStop(1, '#93c5fd');
+
+      ctx.fillStyle = grad;
       ctx.beginPath();
-      ctx.roundRect ? ctx.roundRect(x, y, barWidth, barH, [3, 3, 0, 0]) : ctx.rect(x, y, barWidth, barH);
+      if (ctx.roundRect) {
+        ctx.roundRect(x, y, barWidth, barH, [4, 4, 0, 0]);
+      } else {
+        ctx.rect(x, y, barWidth, barH);
+      }
       ctx.fill();
 
-      // Show a few timestamp labels
-      if (series.length <= 12 || idx % Math.ceil(series.length / 6) === 0) {
+      // Timestamp labels (show 4 to 6 evenly spaced labels)
+      var step = Math.max(1, Math.ceil(n / 6));
+      if (idx % step === 0 || idx === n - 1) {
         var dt = s.dimensions && s.dimensions.datetime ? s.dimensions.datetime : '';
         var lbl = '';
         if (dt) {
           var d = new Date(dt);
-          lbl = (d.getMonth() + 1) + '/' + d.getDate() + ' ' + ('0' + d.getHours()).slice(-2) + ':00';
+          lbl = ('0' + (d.getMonth() + 1)).slice(-2) + '/' + ('0' + d.getDate()).slice(-2) + ' ' + ('0' + d.getHours()).slice(-2) + ':00';
         }
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '9.5px sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.font = '10.5px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(lbl, x + barWidth / 2, h - 8);
+        ctx.fillText(lbl, x + barWidth / 2, h - 10);
       }
     });
   }
 
-  /* Canvas Donut Chart for Query Types Breakdown */
+  /* Canvas Donut Chart & Detailed Breakdown List */
   function drawTypePieChart(canvasId, items) {
     var canvas = document.getElementById(canvasId);
     if (!canvas) { return; }
     var ctx = canvas.getContext('2d');
     var w = canvas.offsetWidth || 400;
-    var h = 220;
+    var h = 280;
     canvas.width = w * window.devicePixelRatio || w;
     canvas.height = h * window.devicePixelRatio || h;
     ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
 
     ctx.clearRect(0, 0, w, h);
 
+    var listContainer = document.getElementById('chartTypeBreakdownList');
+
     if (!items || !items.length) {
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '13px sans-serif';
+      ctx.font = '14px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('Belum ada data tipe record', w / 2, h / 2);
+      if (listContainer) {
+        listContainer.innerHTML = '<div style="text-align:center; padding:12px; color:var(--dns-gray-400); font-size:13px;">Tidak ada kueri tercatat.</div>';
+      }
       return;
     }
 
     var total = 0;
-    items.forEach(function (it) { total += (it.count || 0); });
+    items.forEach(function (it) { total += (parseInt(it.count, 10) || 0); });
     if (total === 0) { total = 1; }
 
-    var colors = ['#2563eb', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#64748b'];
-    var cx = Math.min(100, w / 4);
-    var cy = h / 2;
-    var radius = Math.min(65, (h / 2) - 16);
-    var innerRadius = radius * 0.58;
+    var colors = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b', '#e11d48'];
+    var cx = w / 2;
+    var cy = (h / 2) - 10;
+    var radius = Math.min(85, (h / 2) - 25);
+    var innerRadius = radius * 0.62;
 
     var startAngle = -Math.PI / 2;
 
     items.forEach(function (it, idx) {
-      var slice = ((it.count || 0) / total) * 2 * Math.PI;
+      var cnt = parseInt(it.count, 10) || 0;
+      var slice = (cnt / total) * 2 * Math.PI;
       var endAngle = startAngle + slice;
       var color = colors[idx % colors.length];
 
@@ -2698,43 +2811,46 @@
       ctx.closePath();
       ctx.fill();
 
+      // subtle separator border
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
       startAngle = endAngle;
     });
 
-    // Donut Center text
+    // Donut Center Text
     ctx.fillStyle = '#0f172a';
-    ctx.font = 'bold 13px sans-serif';
+    ctx.font = '700 18px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(items.length + ' Types', cx, cy + 4);
+    ctx.fillText(formatNumber(total), cx, cy + 2);
 
-    // Legend on the right
-    var legendX = cx + radius + 30;
-    var legendY = 28;
-    var rowHeight = 22;
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('Total Kueri', cx, cy + 18);
 
-    items.slice(0, 7).forEach(function (it, idx) {
-      var color = colors[idx % colors.length];
-      var name = (it.dimensions && it.dimensions.queryType) ? it.dimensions.queryType : 'Other';
-      var cnt = it.count || 0;
-      var pct = Math.round((cnt / total) * 100);
+    // Populate Detailed Breakdown List under the chart
+    if (listContainer) {
+      var html = '';
+      items.forEach(function (it, idx) {
+        var color = colors[idx % colors.length];
+        var name = (it.dimensions && it.dimensions.queryType) ? it.dimensions.queryType : 'Unknown';
+        var cnt = parseInt(it.count, 10) || 0;
+        var pct = ((cnt / total) * 100).toFixed(1);
 
-      // Color badge
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(legendX, legendY + (idx * rowHeight) + 6, 5, 0, 2 * Math.PI);
-      ctx.fill();
-
-      // Type Label
-      ctx.fillStyle = '#1e293b';
-      ctx.font = '600 12px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(name, legendX + 12, legendY + (idx * rowHeight) + 9);
-
-      // Percentage & Count
-      ctx.fillStyle = '#64748b';
-      ctx.font = '11px monospace';
-      ctx.fillText(formatNumber(cnt) + ' (' + pct + '%)', legendX + 75, legendY + (idx * rowHeight) + 9);
-    });
+        html += '<div class="dns-type-item">' +
+          '<div class="dns-type-item-name">' +
+            '<span class="dns-type-item-dot" style="background:' + color + ';"></span>' +
+            '<span>Record <strong>' + escapeHtml(name) + '</strong></span>' +
+          '</div>' +
+          '<div class="dns-type-item-stats">' +
+            '<span><strong>' + formatNumber(cnt) + '</strong> kueri</span>' +
+            '<span class="dns-badge dns-badge-blue" style="font-size:11.5px; padding:2px 8px;">' + pct + '%</span>' +
+          '</div>' +
+        '</div>';
+      });
+      listContainer.innerHTML = html;
+    }
   }
 })();
 {/literal}
