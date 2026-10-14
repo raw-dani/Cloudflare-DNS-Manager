@@ -1260,6 +1260,44 @@
 #tabChangepw {
   display: none !important;
 }
+
+/* Hide WHMCS Sidebar (Service Details Overview & Actions) */
+.clientarea-sidebar,
+.sidebar,
+aside.col-md-3,
+aside.col-lg-3,
+.col-md-3.pull-md-left,
+.col-lg-3.pull-lg-left,
+.col-md-4.pull-md-left,
+.col-lg-4.pull-lg-left,
+.col-md-3.pull-left,
+.col-lg-3.pull-left,
+.col-md-4.pull-left,
+.col-lg-4.pull-left,
+div[class*="sidebar"],
+.panel:has(.list-group-item[href*="action=productdetails"]) {
+  display: none !important;
+}
+
+/* Stretch WHMCS Main Content Column to Full Width */
+.col-md-9.pull-md-right,
+.col-lg-9.pull-lg-right,
+.col-md-8.pull-md-right,
+.col-lg-8.pull-lg-right,
+.col-md-9.pull-right,
+.col-lg-9.pull-right,
+.col-md-8.pull-right,
+.col-lg-8.pull-right,
+.col-md-9,
+.col-lg-9,
+.col-md-8,
+.col-lg-8,
+.product-details-content,
+.main-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: 0 0 100% !important;
+}
 </style>
 
 <div class="dns-manager-container">
@@ -2942,6 +2980,27 @@
       });
       listContainer.innerHTML = html;
     }
+  }
+
+  /* Automatically hide WHMCS Service Details sidebar on DOM ready */
+  function hideWhmcsSidebar() {
+    var sidebars = document.querySelectorAll('.clientarea-sidebar, aside.col-md-3, aside.col-lg-3, .col-md-3.pull-md-left, .col-md-3.pull-left');
+    sidebars.forEach(function (sb) {
+      sb.style.setProperty('display', 'none', 'important');
+    });
+
+    var contentCols = document.querySelectorAll('.col-md-9, .col-lg-9, .col-md-9.pull-md-right, .col-md-9.pull-right, .product-details-content');
+    contentCols.forEach(function (col) {
+      col.style.setProperty('width', '100%', 'important');
+      col.style.setProperty('max-width', '100%', 'important');
+      col.style.setProperty('flex', '0 0 100%', 'important');
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hideWhmcsSidebar);
+  } else {
+    hideWhmcsSidebar();
   }
 })();
 {/literal}
