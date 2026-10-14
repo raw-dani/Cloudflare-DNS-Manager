@@ -1216,9 +1216,9 @@ function cfdnsmanager_ClientArea(array $params)
             ];
         } elseif ($action === 'scanDnsRecords') {
             try {
-                $scanResult = $cloudflareAPI->scanAndImportDnsRecords($zoneId);
+                $scanResult = $cloudflareAPI->scanAndImportDnsRecords($zoneId, $domain);
                 if ($scanResult['success']) {
-                    $scannedRecords = $scanResult['records'];
+                    $scannedRecords = $scanResult['records'] ?? [];
                     $addedCount = 0;
                     $skippedCount = 0;
 
@@ -1251,7 +1251,7 @@ function cfdnsmanager_ClientArea(array $params)
                     }
 
                     $status = 'success';
-                    $msg = "DNS scan completed! Added {$addedCount} new records, skipped {$skippedCount} existing records.";
+                    $msg = $scanResult['message'] ?? ("DNS scan completed! Ditemukan " . count($scannedRecords) . " records.");
                 } else {
                     $status = 'error';
                     $msg = 'DNS scan failed: ' . $scanResult['message'];

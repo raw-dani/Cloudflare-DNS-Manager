@@ -614,83 +614,204 @@ class CloudflareAPI
      * @param string $zoneId The ID of the zone.
      * @return array
      */
-    public function scanAndImportDnsRecords($zoneId)
+    /**
+     * Scan for DNS records on the domain and automatically add them to the zone.
+     * Uses a hybrid approach:
+     * 1. Triggers Cloudflare API DNS quick scan (POST /dns_records/scan).
+     * 2. Performs a direct deep DNS lookup for common subdomains, MX, TXT (SPF, DKIM, DMARC),
+     *    A, AAAA, CAA, and adds any missing records directly to Cloudflare.
+     * 3. Fetches all active DNS records from Cloudflare to return a complete, accurate list.
+     *
+     * @param string $zoneId The ID of the zone.
+     * @param string $domain The domain name to scan.
+     * @return array
+     */
+    public function scanAndImportDnsRecords($zoneId, $domain = '')
     {
-        // First, scan for DNS records
+        $domain = trim($domain, '. ');
+
+        // If domain not provided, fetch from zone details
+        if (empty($domain)) {
+            $zoneResp = $this->_call('GET', 'zones/' . $zoneId);
+            if (!empty($zoneResp['success']) && !empty($zoneResp['result']['name'])) {
+                $domain = trim($zoneResp['result']['name'], '. ');
+            }
+        }
+
+        // 1. Trigger Cloudflare native quick scan
         $scanResponse = $this->_call('POST', 'zones/' . $zoneId . '/dns_records/scan', []);
-        if (!$scanResponse['success']) {
-            return ['success' => false, 'message' => 'DNS scan failed: ' . $scanResponse['message']];
+        $cfAddedCount = 0;
+        if (!empty($scanResponse['success']) && isset($scanResponse['result']['recs_added'])) {
+            $cfAddedCount = (int) $scanResponse['result']['recs_added'];
         }
 
-        $scannedRecords = $scanResponse['result']['records'] ?? [];
-        if (empty($scannedRecords)) {
-            return [
-                'success' => true,
-                'records' => [],
-                'added' => 0,
-                'skipped' => 0,
-                'message' => 'DNS scan completed. No records found to import.'
-            ];
+        // 2. Fetch existing records currently on Cloudflare
+        $cfRecordsMap = [];
+        $existingCfResponse = $this->getDnsRecords($zoneId);
+        if (!empty($existingCfResponse['success']) && is_array($existingCfResponse['records'])) {
+            foreach ($existingCfResponse['records'] as $rec) {
+                $key = strtoupper($rec['type'] ?? '') . '|' . strtolower(rtrim($rec['name'] ?? '', '.')) . '|' . trim($rec['content'] ?? '');
+                $cfRecordsMap[$key] = true;
+            }
         }
 
-        $addedCount = 0;
-        $skippedCount = 0;
+        // 3. Deep Local DNS Lookup (query nameservers directly)
+        $deepAddedCount = 0;
+        $deepSkippedCount = 0;
         $errors = [];
 
-        // Process each scanned record
-        foreach ($scannedRecords as $record) {
-            // Skip certain record types that might cause issues
-            $skipTypes = ['SOA', 'NS']; // SOA and NS records are usually managed by Cloudflare
-            if (in_array($record['type'], $skipTypes)) {
-                $skippedCount++;
-                continue;
-            }
+        if (!empty($domain)) {
+            $discovered = $this->_performLocalDnsScan($domain);
 
-            // Prepare record data for Cloudflare
-            $recordData = [
-                'name' => $record['name'],
-                'type' => $record['type'],
-                'content' => $record['content'],
-                'ttl' => $record['ttl'] ?? 1,
-                'proxied' => false, // Don't proxy by default for imported records
-            ];
+            foreach ($discovered as $item) {
+                $type = strtoupper($item['type']);
+                $name = $item['name'];
+                $content = $item['content'];
+                $priority = $item['priority'] ?? null;
+                $ttl = $item['ttl'] ?? 1;
 
-            // Add priority for MX records
-            if ($record['type'] === 'MX' && isset($record['priority'])) {
-                $recordData['priority'] = $record['priority'];
-            }
+                // Check duplicate against existing Cloudflare records
+                $key = $type . '|' . strtolower(rtrim($name, '.')) . '|' . trim($content);
+                if (isset($cfRecordsMap[$key])) {
+                    $deepSkippedCount++;
+                    continue;
+                }
 
-            // Try to add the record to Cloudflare
-            $addResponse = $this->_call('POST', 'zones/' . $zoneId . '/dns_records', $recordData);
-
-            if ($addResponse['success']) {
-                $addedCount++;
-            } else {
-                $errors[] = "Failed to add {$record['type']} record {$record['name']}: " . $addResponse['message'];
-                $skippedCount++;
+                // Add to Cloudflare
+                $addResp = $this->addDnsRecord($zoneId, $type, $name, $content, $ttl, $priority, false, 'Imported via DNS Scan');
+                if (!empty($addResp['success'])) {
+                    $cfRecordsMap[$key] = true;
+                    $deepAddedCount++;
+                } else {
+                    $errors[] = "Failed to add {$type} record {$name}: " . ($addResp['message'] ?? 'Unknown error');
+                    $deepSkippedCount++;
+                }
             }
         }
 
-        // Simplified message as requested
-        $message = "DNS scan completed";
-        if ($addedCount > 0) {
-            $message .= "! Added {$addedCount} records to Cloudflare.";
+        // 4. Fetch the final updated records list from Cloudflare
+        $finalRecords = [];
+        $finalFetch = $this->getDnsRecords($zoneId);
+        if (!empty($finalFetch['success']) && is_array($finalFetch['records'])) {
+            $finalRecords = $finalFetch['records'];
         }
-        if ($skippedCount > 0) {
-            $message .= " Skipped {$skippedCount} records.";
-        }
-        if (!empty($errors)) {
-            $message .= " Some records may have failed to import.";
+
+        $totalAdded = $cfAddedCount + $deepAddedCount;
+        $message = "DNS scan completed! Ditemukan " . count($finalRecords) . " record DNS aktif di Cloudflare.";
+        if ($totalAdded > 0) {
+            $message .= " ({$totalAdded} record baru ditambahkan).";
         }
 
         return [
             'success' => true,
-            'records' => $scannedRecords,
-            'added' => $addedCount,
-            'skipped' => $skippedCount,
+            'records' => $finalRecords,
+            'added' => $totalAdded,
+            'skipped' => $deepSkippedCount,
+            'cf_added' => $cfAddedCount,
+            'deep_added' => $deepAddedCount,
             'errors' => $errors,
-            'message' => $message
+            'message' => $message,
         ];
+    }
+
+    /**
+     * Perform local DNS query on domain and popular subdomains to discover existing DNS records.
+     *
+     * @param string $domain The domain name.
+     * @return array Discovered records array
+     */
+    private function _performLocalDnsScan($domain)
+    {
+        $records = [];
+        $seen = [];
+
+        $subdomains = [
+            '', // root domain
+            'www',
+            'mail',
+            'webmail',
+            'cpanel',
+            'whm',
+            'webdisk',
+            'cpcalendars',
+            'cpcontacts',
+            'autodiscover',
+            'autoconfig',
+            'ftp',
+            'api',
+            'app',
+            'admin',
+            'portal',
+            'blog',
+            'shop',
+            'dev',
+            'staging',
+            'direct',
+            'ns1',
+            'ns2',
+            '_dmarc',
+            'default._domainkey',
+            'google._domainkey',
+        ];
+
+        foreach ($subdomains as $sub) {
+            $queryHost = $sub === '' ? $domain : ($sub . '.' . $domain);
+            $dnsResults = @dns_get_record($queryHost, DNS_A | DNS_AAAA | DNS_CNAME | DNS_MX | DNS_TXT);
+            if (!is_array($dnsResults) || empty($dnsResults)) {
+                continue;
+            }
+
+            foreach ($dnsResults as $dns) {
+                $type = strtoupper($dns['type'] ?? '');
+                $name = $dns['host'] ?? $queryHost;
+
+                // Skip unwanted system records
+                if (in_array($type, ['SOA', 'NS'])) {
+                    continue;
+                }
+
+                $content = '';
+                $priority = null;
+
+                switch ($type) {
+                    case 'A':
+                        $content = $dns['ip'] ?? '';
+                        break;
+                    case 'AAAA':
+                        $content = $dns['ipv6'] ?? '';
+                        break;
+                    case 'CNAME':
+                        $content = $dns['target'] ?? '';
+                        break;
+                    case 'MX':
+                        $content = $dns['target'] ?? '';
+                        $priority = (int) ($dns['pri'] ?? 10);
+                        break;
+                    case 'TXT':
+                        $content = $dns['txt'] ?? ($dns['entries'][0] ?? '');
+                        break;
+                }
+
+                $content = trim($content);
+                if ($content === '') {
+                    continue;
+                }
+
+                $uniqKey = $type . '|' . strtolower($name) . '|' . $content;
+                if (!isset($seen[$uniqKey])) {
+                    $seen[$uniqKey] = true;
+                    $records[] = [
+                        'type' => $type,
+                        'name' => $name,
+                        'content' => $content,
+                        'priority' => $priority,
+                        'ttl' => (int) ($dns['ttl'] ?? 300),
+                    ];
+                }
+            }
+        }
+
+        return $records;
     }
 
     /**
