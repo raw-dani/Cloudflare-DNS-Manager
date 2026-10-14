@@ -342,6 +342,29 @@
   margin-top: 14px;
   font-size: 13px;
   color: var(--dns-gray-700);
+.dns-type-flex-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .dns-type-flex-wrap {
+    flex-direction: row;
+    align-items: center;
+    gap: 30px;
+  }
+  .dns-donut-container {
+    flex: 0 0 320px;
+    max-width: 320px;
+  }
+  .dns-type-list-grid {
+    flex: 1;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+    gap: 10px !important;
+    margin-top: 0 !important;
+  }
 }
 
 .dns-type-list {
@@ -355,11 +378,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
+  padding: 10px 14px;
   background: var(--dns-gray-50);
   border: 1px solid var(--dns-gray-200);
   border-radius: 8px;
   font-size: 13px;
+  transition: all .15s ease;
+}
+
+.dns-type-item:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
 }
 
 .dns-type-item-name {
@@ -1823,46 +1852,45 @@
         </div>
       </div>
 
-      {* Charts Grid *}
-      <div class="dns-grid-2">
-        {* Volume Over Time *}
-        <div class="dns-card">
-          <div class="dns-card-header">
-            <span class="dns-card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              {$LANG.cfdnsmanager.queryVolume}
-            </span>
+      {* Chart 1: Volume Over Time (Full Width) *}
+      <div class="dns-card" style="margin-bottom:20px; width:100%;">
+        <div class="dns-card-header">
+          <span class="dns-card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            {$LANG.cfdnsmanager.queryVolume}
+          </span>
+        </div>
+        <div class="dns-card-body">
+          <p class="dns-chart-card-desc">
+            Grafik menunjukkan fluktuasi jumlah resolusi kueri nama domain Anda dari waktu ke waktu. Puncak (peak) menandakan lonjakan traffic atau akses pengunjung.
+          </p>
+          <div class="dns-chart-container" style="height:320px; width:100%;">
+            <canvas id="chartVolume" style="width:100%; height:100%; display:block;"></canvas>
           </div>
-          <div class="dns-card-body">
-            <p class="dns-chart-card-desc">
-              Grafik menunjukkan fluktuasi jumlah resolusi kueri nama domain Anda dari waktu ke waktu. Puncak (peak) menandakan lonjakan traffic atau akses pengunjung.
-            </p>
-            <div class="dns-chart-container" style="height:280px;">
-              <canvas id="chartVolume"></canvas>
-            </div>
-            <div class="dns-chart-summary-bar" id="chartVolumeSummary">
-              <span>Rata-rata kueri per interval: <strong id="valAvgQueries">0</strong></span>
-              <span>Puncak tertinggi: <strong id="valPeakQueries" style="color:var(--dns-primary);">0</strong></span>
-            </div>
+          <div class="dns-chart-summary-bar" id="chartVolumeSummary">
+            <span>Rata-rata kueri per interval: <strong id="valAvgQueries">0</strong></span>
+            <span>Puncak tertinggi: <strong id="valPeakQueries" style="color:var(--dns-primary);">0</strong></span>
           </div>
         </div>
+      </div>
 
-        {* Queries by Record Type *}
-        <div class="dns-card">
-          <div class="dns-card-header">
-            <span class="dns-card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
-              {$LANG.cfdnsmanager.queryTypeBreakdown}
-            </span>
-          </div>
-          <div class="dns-card-body">
-            <p class="dns-chart-card-desc">
-              Proporsi jenis DNS record yang paling banyak diminta oleh pengunjung atau aplikasi luar (misal: <strong>A/AAAA</strong> untuk website, <strong>MX</strong> untuk email).
-            </p>
-            <div class="dns-chart-container" style="height:280px;">
-              <canvas id="chartType"></canvas>
+      {* Chart 2: Queries by Record Type (Full Width) *}
+      <div class="dns-card" style="margin-bottom:20px; width:100%;">
+        <div class="dns-card-header">
+          <span class="dns-card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+            {$LANG.cfdnsmanager.queryTypeBreakdown}
+          </span>
+        </div>
+        <div class="dns-card-body">
+          <p class="dns-chart-card-desc">
+            Proporsi jenis DNS record yang paling banyak diminta oleh pengunjung atau aplikasi luar (misal: <strong>A/AAAA</strong> untuk website, <strong>MX</strong> untuk email).
+          </p>
+          <div class="dns-type-flex-wrap">
+            <div class="dns-chart-container dns-donut-container" style="height:280px;">
+              <canvas id="chartType" style="width:100%; height:100%; display:block;"></canvas>
             </div>
-            <div id="chartTypeBreakdownList" class="dns-type-list">
+            <div id="chartTypeBreakdownList" class="dns-type-list dns-type-list-grid">
               <!-- Item breakdown list rendered via JS -->
             </div>
           </div>
@@ -2593,7 +2621,10 @@
     return (num || 0).toLocaleString();
   }
 
+  var lastAnalyticsData = null;
+
   function renderDnsAnalytics(data) {
+    lastAnalyticsData = data;
     var summary = data.summary || {};
     var timeSeries = data.timeSeries || [];
     var byQueryType = data.byQueryType || [];
@@ -2652,17 +2683,31 @@
     });
   }
 
+  /* Redraw on window resize if analytics tab is visible */
+  window.addEventListener('resize', function () {
+    if (currentActiveTab === 'tabAnalytics' && lastAnalyticsData) {
+      drawVolumeChart('chartVolume', lastAnalyticsData.timeSeries || []);
+      drawTypePieChart('chartType', lastAnalyticsData.byQueryType || []);
+    }
+  });
+
   /* Canvas Bar / Smooth Area Chart for Volume Over Time */
   function drawVolumeChart(canvasId, series) {
     var canvas = document.getElementById(canvasId);
     if (!canvas) { return; }
-    var ctx = canvas.getContext('2d');
-    var w = canvas.offsetWidth || 500;
-    var h = 280;
-    canvas.width = w * window.devicePixelRatio || w;
-    canvas.height = h * window.devicePixelRatio || h;
-    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+    var parent = canvas.parentElement;
+    var w = (parent && parent.clientWidth > 0) ? parent.clientWidth : (canvas.offsetWidth || 700);
+    var h = 320;
 
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+    ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, w, h);
 
     if (!series || !series.length) {
@@ -2692,13 +2737,14 @@
     if (avgEl) { avgEl.textContent = formatNumber(avg) + ' queries'; }
     if (peakEl) { peakEl.textContent = formatNumber(max) + ' queries'; }
 
-    var paddingLeft = 50;
-    var paddingBottom = 32;
-    var paddingTop = 20;
-    var chartW = w - paddingLeft - 20;
+    var paddingLeft = 55;
+    var paddingRight = 24;
+    var paddingBottom = 42;
+    var paddingTop = 24;
+    var chartW = w - paddingLeft - paddingRight;
     var chartH = h - paddingBottom - paddingTop;
 
-    // Draw horizontal grid lines & labels
+    // Draw horizontal grid lines & Y-axis labels
     ctx.strokeStyle = '#e2e8f0';
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
@@ -2707,70 +2753,113 @@
       var y = paddingTop + (chartH / 4) * i;
       ctx.beginPath();
       ctx.moveTo(paddingLeft, y);
-      ctx.lineTo(w - 16, y);
+      ctx.lineTo(w - paddingRight, y);
       ctx.stroke();
 
       var val = Math.round(max - (max / 4) * i);
       ctx.fillStyle = '#64748b';
-      ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.font = '11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.textAlign = 'right';
-      ctx.fillText(formatNumber(val), paddingLeft - 8, y + 4);
+      ctx.fillText(formatNumber(val), paddingLeft - 10, y + 4);
     }
     ctx.setLineDash([]);
 
-    // Calculate bar positions
+    // Calculate bar width & step
     var n = series.length;
     var slotW = chartW / n;
-    var barWidth = Math.max(4, Math.min(28, slotW * 0.65));
+    var barWidth = Math.max(3, Math.min(36, slotW * 0.72));
 
-    // Draw Gradient Bars
+    // Determine how many labels can comfortably fit on X axis (min 85px per label)
+    var maxLabels = Math.max(2, Math.floor(chartW / 85));
+    var labelInterval = Math.max(1, Math.ceil(n / maxLabels));
+
+    // Draw Bars
     series.forEach(function (s, idx) {
       var c = parseInt(s.count, 10) || 0;
-      var barH = Math.max(3, (c / max) * chartH);
+      var barH = c > 0 ? Math.max(4, (c / max) * chartH) : 0;
       var x = paddingLeft + (idx * slotW) + (slotW - barWidth) / 2;
       var y = paddingTop + (chartH - barH);
 
-      var grad = ctx.createLinearGradient(0, y, 0, paddingTop + chartH);
-      grad.addColorStop(0, '#2563eb');
-      grad.addColorStop(1, '#93c5fd');
+      if (barH > 0) {
+        var grad = ctx.createLinearGradient(0, y, 0, paddingTop + chartH);
+        grad.addColorStop(0, '#2563eb');
+        grad.addColorStop(1, '#93c5fd');
 
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      if (ctx.roundRect) {
-        ctx.roundRect(x, y, barWidth, barH, [4, 4, 0, 0]);
-      } else {
-        ctx.rect(x, y, barWidth, barH);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(x, y, barWidth, barH, [4, 4, 0, 0]);
+        } else {
+          ctx.rect(x, y, barWidth, barH);
+        }
+        ctx.fill();
       }
-      ctx.fill();
 
-      // Timestamp labels (show 4 to 6 evenly spaced labels)
-      var step = Math.max(1, Math.ceil(n / 6));
-      if (idx % step === 0 || idx === n - 1) {
+      // X-axis Timestamp labels (smart interval without collision)
+      var shouldDrawLabel = (idx % labelInterval === 0);
+      // Avoid drawing label too close to the end if last label will be forced
+      if (idx === n - 1) {
+        shouldDrawLabel = true;
+      } else if (n - 1 - idx < Math.ceil(labelInterval * 0.65)) {
+        shouldDrawLabel = false;
+      }
+
+      if (shouldDrawLabel) {
         var dt = s.dimensions && s.dimensions.datetime ? s.dimensions.datetime : '';
         var lbl = '';
         if (dt) {
           var d = new Date(dt);
-          lbl = ('0' + (d.getMonth() + 1)).slice(-2) + '/' + ('0' + d.getDate()).slice(-2) + ' ' + ('0' + d.getHours()).slice(-2) + ':00';
+          var mm = ('0' + (d.getMonth() + 1)).slice(-2);
+          var dd = ('0' + d.getDate()).slice(-2);
+          var hh = ('0' + d.getHours()).slice(-2);
+          var mn = ('0' + d.getMinutes()).slice(-2);
+          lbl = mm + '/' + dd + ' ' + hh + ':' + mn;
         }
-        ctx.fillStyle = '#64748b';
-        ctx.font = '10.5px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(lbl, x + barWidth / 2, h - 10);
+
+        if (lbl) {
+          ctx.fillStyle = '#64748b';
+          ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.textAlign = 'center';
+
+          // Tick mark
+          ctx.beginPath();
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 1;
+          ctx.moveTo(x + barWidth / 2, paddingTop + chartH);
+          ctx.lineTo(x + barWidth / 2, paddingTop + chartH + 5);
+          ctx.stroke();
+
+          ctx.fillText(lbl, x + barWidth / 2, paddingTop + chartH + 20);
+        }
       }
     });
+
+    // Draw baseline
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(paddingLeft, paddingTop + chartH);
+    ctx.lineTo(w - paddingRight, paddingTop + chartH);
+    ctx.stroke();
   }
 
   /* Canvas Donut Chart & Detailed Breakdown List */
   function drawTypePieChart(canvasId, items) {
     var canvas = document.getElementById(canvasId);
     if (!canvas) { return; }
-    var ctx = canvas.getContext('2d');
-    var w = canvas.offsetWidth || 400;
+    var parent = canvas.parentElement;
+    var w = (parent && parent.clientWidth > 0) ? parent.clientWidth : (canvas.offsetWidth || 300);
     var h = 280;
-    canvas.width = w * window.devicePixelRatio || w;
-    canvas.height = h * window.devicePixelRatio || h;
-    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
 
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+    ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, w, h);
 
     var listContainer = document.getElementById('chartTypeBreakdownList');
@@ -2792,8 +2881,8 @@
 
     var colors = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b', '#e11d48'];
     var cx = w / 2;
-    var cy = (h / 2) - 10;
-    var radius = Math.min(85, (h / 2) - 25);
+    var cy = (h / 2);
+    var radius = Math.min(95, (h / 2) - 20);
     var innerRadius = radius * 0.62;
 
     var startAngle = -Math.PI / 2;
@@ -2813,7 +2902,7 @@
 
       // subtle separator border
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
       ctx.stroke();
 
       startAngle = endAngle;
@@ -2821,15 +2910,15 @@
 
     // Donut Center Text
     ctx.fillStyle = '#0f172a';
-    ctx.font = '700 18px sans-serif';
+    ctx.font = '700 20px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(formatNumber(total), cx, cy + 2);
+    ctx.fillText(formatNumber(total), cx, cy + 3);
 
     ctx.fillStyle = '#64748b';
-    ctx.font = '11px sans-serif';
-    ctx.fillText('Total Kueri', cx, cy + 18);
+    ctx.font = '11.5px sans-serif';
+    ctx.fillText('Total Kueri', cx, cy + 21);
 
-    // Populate Detailed Breakdown List under the chart
+    // Populate Detailed Breakdown List under / alongside the chart
     if (listContainer) {
       var html = '';
       items.forEach(function (it, idx) {
