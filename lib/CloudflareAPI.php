@@ -95,21 +95,41 @@ class CloudflareAPI
 
         $decodedResponse = json_decode($response, true);
 
-        if ($httpCode >= 200 && $httpCode < 300 && isset($decodedResponse['success']) && $decodedResponse['success']) {
-            return ['success' => true, 'result' => $decodedResponse['result']];
-        } else {
-            $errorMessage = 'API Error: Unknown error.';
-            if (isset($decodedResponse['errors']) && is_array($decodedResponse['errors'])) {
-                $errorMessages = [];
-                foreach ($decodedResponse['errors'] as $err) {
-                    $errorMessages[] = $err['message'] . (isset($err['code']) ? ' (Code: ' . $err['code'] . ')' : '');
-                }
-                $errorMessage = implode(', ', $errorMessages);
-            } elseif (isset($decodedResponse['message'])) {
-                $errorMessage = $decodedResponse['message'];
+        // Standard Cloudflare REST response has 'success': true/false
+        // GraphQL response does NOT have a root 'success' boolean, but has 'data' and 'errors'
+        $isGraphQL = ($endpoint === 'graphql');
+        $isSuccess = false;
+
+        if ($isGraphQL) {
+            $isSuccess = ($httpCode >= 200 && $httpCode < 300 && (isset($decodedResponse['data']) || !empty($decodedResponse['data'])) && empty($decodedResponse['errors']));
+            if ($isSuccess) {
+                return ['success' => true, 'result' => $decodedResponse];
             }
-            return ['success' => false, 'message' => $errorMessage, 'httpCode' => $httpCode, 'response' => $decodedResponse];
+        } else {
+            $isSuccess = ($httpCode >= 200 && $httpCode < 300 && isset($decodedResponse['success']) && $decodedResponse['success']);
+            if ($isSuccess) {
+                return ['success' => true, 'result' => $decodedResponse['result']];
+            }
         }
+
+        $errorMessage = 'API Error: Unknown error.';
+        if (isset($decodedResponse['errors']) && is_array($decodedResponse['errors'])) {
+            $errorMessages = [];
+            foreach ($decodedResponse['errors'] as $err) {
+                if (is_array($err)) {
+                    $errorMessages[] = ($err['message'] ?? 'Error') . (isset($err['code']) ? ' (Code: ' . $err['code'] . ')' : '');
+                } elseif (is_string($err)) {
+                    $errorMessages[] = $err;
+                }
+            }
+            if (!empty($errorMessages)) {
+                $errorMessage = implode(', ', $errorMessages);
+            }
+        } elseif (isset($decodedResponse['message'])) {
+            $errorMessage = $decodedResponse['message'];
+        }
+
+        return ['success' => false, 'message' => $errorMessage, 'httpCode' => $httpCode, 'response' => $decodedResponse];
     }
 
     /**
